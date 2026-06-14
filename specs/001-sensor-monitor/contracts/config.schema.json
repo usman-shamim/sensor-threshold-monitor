@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sensor Threshold Config",
+  "description": "Inclusive safe ranges per sensor type for the Sensor Threshold Monitor. Validated at load time by load_config(); any subset of sensors may be provided, unlisted sensors fall back to documented defaults.",
+  "type": "object",
+  "properties": {
+    "temperature": { "$ref": "#/definitions/range" },
+    "pressure": { "$ref": "#/definitions/range" },
+    "flow_rate": { "$ref": "#/definitions/range" }
+  },
+  "additionalProperties": false,
+  "minProperties": 1,
+  "definitions": {
+    "range": {
+      "type": "object",
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" }
+      },
+      "required": ["min", "max"],
+      "additionalProperties": false,
+      "description": "min and max are inclusive; load_config enforces min <= max."
+    }
+  },
+  "examples": [
+    {
+      "temperature": { "min": 0, "max": 100 },
+      "pressure": { "min": 1.0, "max": 5.0 },
+      "flow_rate": { "min": 10, "max": 50 }
+    }
+  ]
+}

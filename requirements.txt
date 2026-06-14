@@ -1,0 +1,13 @@
+# Sensor Threshold Monitor — dependencies
+#
+# This tool requires NO third-party packages at all. Every path — including the
+# optional --ai diagnosis layer — runs on the Python standard library only
+# (argparse, csv, json, os, sys, urllib). Nothing to install for normal use or the
+# CS50P-graded path.
+#
+# OPTIONAL — AI diagnosis layer (the --ai flag):
+#   No package needed. It calls the Google Gemini REST API over HTTPS via urllib.
+#   Just set the GEMINI_API_KEY environment variable to enable it.
+#
+# DEV ONLY — test runner (not a runtime dependency):
+#   pytest

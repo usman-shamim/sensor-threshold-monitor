@@ -1,0 +1,5 @@
+{
+  "temperature": { "min": 0, "max": 100 },
+  "pressure": { "min": 1.0, "max": 5.0 },
+  "flow_rate": { "min": 10, "max": 50 }
+}
