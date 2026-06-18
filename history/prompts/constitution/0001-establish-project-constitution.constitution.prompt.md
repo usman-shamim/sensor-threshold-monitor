@@ -1,3 +1,4 @@
+
 ---
 id: 0001
 title: Establish project constitution v1.0.0
