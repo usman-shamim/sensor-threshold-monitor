@@ -39,7 +39,12 @@ class MainWindow:
         if kiosk:
             self.root.attributes("-fullscreen", True)
         else:
-            self.root.geometry("1280x800")
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            w = max(900, min(sw - 40, 1280))
+            h = max(600, min(sh - 80, 800))
+            self.root.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
+        self.root.minsize(900, 600)
 
     # -- layout ---------------------------------------------------------------
     def _build(self):
@@ -47,11 +52,15 @@ class MainWindow:
         body = ctk.CTkFrame(self.root, fg_color=theme.BG)
         body.pack(fill="both", expand=True, padx=12, pady=6)
 
-        # Left column: cards + charts. Right column: mimic + alarms + diagnosis + log.
+        # Left column (weight 3) and right column (weight 2) in a grid so proportions
+        # hold at any window size instead of competing pack expand.
+        body.grid_columnconfigure(0, weight=3)
+        body.grid_columnconfigure(1, weight=2)
+        body.grid_rowconfigure(0, weight=1)
         left = ctk.CTkFrame(body, fg_color=theme.BG)
-        left.pack(side="left", fill="both", expand=True)
-        right = ctk.CTkFrame(body, fg_color=theme.BG, width=560)
-        right.pack(side="right", fill="both", padx=(12, 0))
+        left.grid(row=0, column=0, sticky="nsew")
+        right = ctk.CTkFrame(body, fg_color=theme.BG)
+        right.grid(row=0, column=1, sticky="nsew", padx=(12, 0))
 
         cards = ctk.CTkFrame(left, fg_color=theme.BG)
         cards.pack(fill="x")
@@ -75,12 +84,18 @@ class MainWindow:
         self._mimic = MimicDiagram(left, self.kiosk)
         self._mimic.pack(fill="x", pady=(6, 0))
 
+        # Grid the right column so alarms and log share space proportionally
+        # instead of competing via pack expand (which causes reflow as content grows).
+        right.grid_rowconfigure(0, weight=2)   # alarms
+        right.grid_rowconfigure(1, weight=0)   # ai panel — fixed height
+        right.grid_rowconfigure(2, weight=3)   # fault log
+        right.grid_columnconfigure(0, weight=1)
         self._alarms = AlarmPanel(right, self.kiosk)
-        self._alarms.pack(fill="both", expand=True)
+        self._alarms.grid(row=0, column=0, sticky="nsew")
         self._ai = AIPanel(right, self._on_explain_ai, self.kiosk)
-        self._ai.pack(fill="x", pady=(8, 0))
+        self._ai.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         self._log = FaultLog(right, self.kiosk)
-        self._log.pack(fill="both", expand=True, pady=(8, 0))
+        self._log.grid(row=2, column=0, sticky="nsew", pady=(8, 0))
 
         self._shutdown_banner = ctk.CTkLabel(
             self.root, text="", fg_color=theme.SHUTDOWN_BG, text_color="#ffffff",
@@ -91,7 +106,8 @@ class MainWindow:
         bar.pack(fill="x")
 
         self._status = ctk.CTkLabel(bar, text="Starting…", text_color=theme.MUTED,
-                                    font=theme.font(12, kiosk=self.kiosk))
+                                    font=theme.font(12, kiosk=self.kiosk),
+                                    anchor="w", width=380)
         self._status.pack(side="left", padx=12, pady=8)
 
         estop = ctk.CTkButton(bar, text="EMERGENCY SHUTDOWN", fg_color=theme.ZONE_COLORS["critical"],
