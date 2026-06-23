@@ -196,6 +196,16 @@ If ALL true, suggest:
 
 Wait for consent; never auto-create ADRs. Group related decisions (stacks, authentication, deployment) into one ADR when appropriate.
 
+## Teaching Workspace (local only)
+
+The following directories and files are part of the `/teach` learning workspace.
+They are **gitignored and must never be committed or pushed to GitHub**:
+- `lessons/` — HTML lesson files
+- `assets/` — shared stylesheets and JS widgets
+- `learning-records/` — learning progress records
+- `reference/` — reference cheat sheets
+- `MISSION.md`, `NOTES.md`, `RESOURCES.md`
+
 ## Basic Project Structure
 
 - `.specify/memory/constitution.md` — Project principles
