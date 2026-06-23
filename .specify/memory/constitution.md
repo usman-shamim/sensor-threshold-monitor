@@ -1,130 +1,152 @@
+
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 2.0.0
-Bump rationale: MAJOR. The seven generic SDD principles (Library-First, CLI Interface,
-  Test-First, Integration Testing, Observability, Versioning & Breaking Changes,
-  Simplicity) are removed and replaced by five CS50P-specific principles. This is a
-  backward-incompatible redefinition of the entire principle set.
+Version change: 2.0.0 → 3.0.0
+Bump rationale: MAJOR. The CS50P-specific principle set is removed entirely and replaced by
+  principles appropriate to this project — a sensor threshold monitoring system comprising the
+  SentinelCLI command-line tool and the SentinelGUI desktop exhibition dashboard. This is a
+  backward-incompatible redefinition of the whole principle set. The previous Standard-Library-Only
+  and CLI-only mandates (CS50P submission constraints) are removed; third-party dependencies and a
+  GUI are now first-class. Test discipline, human-readable errors, offline-first reliability, and
+  secrets hygiene are retained and generalized.
 
 Modified principles:
-  - I. Library-First                  → REMOVED (replaced by Standard-Library-Only)
-  - II. CLI Interface                 → I. CLI via argparse (narrowed to argparse)
-  - III. Test-First (NON-NEGOTIABLE)  → III. Test Coverage in test_project.py (reframed
-                                         to CS50P pytest-per-function requirement)
-  - IV. Integration Testing           → REMOVED (out of scope for single-file CS50P project)
-  - V. Observability                  → V. Human-Readable Error Messages (reframed)
-  - VI. Versioning & Breaking Changes → REMOVED (not applicable to CS50P submission)
-  - VII. Simplicity                   → folded into Governance guidance
-  - (new) I. Python-Only & PEP 8 Style
-  - (new) II. Standard Library Only (No Third-Party Dependencies)
+  - I. Python-Only & PEP 8 Style            → I. Python-First & PEP 8 Style (CS50P rationale removed)
+  - II. Standard Library Only               → REMOVED (replaced by VI. Secure Config & Reproducible
+                                              Dependencies — third-party deps are now permitted/pinned)
+  - III. Test Coverage in test_project.py   → III. Automated Test Coverage (pytest) — generalized
+                                              from "every project.py function" to all testable logic
+  - IV. CLI via argparse                    → REMOVED (the project ships both a CLI and a GUI)
+  - V. Human-Readable Error Messages        → V. Human-Readable Errors (retained, broadened to GUI)
+  - (new) II. Testable Core, Thin UI
+  - (new) IV. Offline-First & Graceful Degradation
+  - (new) VI. Secure Configuration & Reproducible Dependencies
 
 Added sections:
-  - Core Principles I–V (CS50P-specific)
+  - Core Principles I–VI (project-specific)
 Removed sections:
-  - Spec-Driven Development Constraints (replaced by Project Constraints, slimmed)
-Renamed/condensed sections:
-  - Development Workflow & Quality Gates (rescoped to CS50P submission gates)
+  - All CS50P-specific framing (submission layout mandate, "gradable on clean environment", etc.)
 
 Templates requiring updates:
-  - .specify/templates/plan-template.md ........ ✅ aligned (Constitution Check references
-    the constitution generically; no principle names hardcoded)
-  - .specify/templates/spec-template.md ........ ✅ aligned (no constitution refs)
-  - .specify/templates/tasks-template.md ....... ✅ aligned (test-first ordering and
-    single-project layout consistent with Principles III & I)
-  - CLAUDE.md .................................. ✅ aligned (PHR/ADR guarantees retained
-    under Project Constraints)
+  - .specify/templates/plan-template.md ........ ✅ aligned (Constitution Check is generic:
+    "Gates determined based on constitution file"; no principle names hardcoded)
+  - .specify/templates/spec-template.md ........ ✅ aligned (no constitution references)
+  - .specify/templates/tasks-template.md ....... ✅ aligned (test-first ordering and project
+    structure remain consistent with Principles II & III)
+  - CLAUDE.md .................................. ✅ aligned (PHR/ADR guarantees and policies retained)
 
 Follow-up TODOs: None. All placeholders resolved.
 -->
 
-# CS50P Final Project Constitution
+# Sensor Threshold Monitor Constitution
+
+This constitution governs the Sensor Threshold Monitor project, which comprises **SentinelCLI** (a
+Python command-line tool for reading sensor data and checking it against thresholds) and
+**SentinelGUI** (a desktop, SCADA-style monitoring and fault-diagnosis dashboard built for live
+exhibition and teaching use). All code in the repository — CLI, GUI, and shared logic — is bound by
+the principles below unless a principle states a narrower scope.
 
 ## Core Principles
 
-### I. Python-Only & PEP 8 Style
+### I. Python-First & PEP 8 Style
 
-All source code MUST be written in Python 3. Code MUST conform to PEP 8 style: 4-space
-indentation, `snake_case` for functions and variables, descriptive names, and lines kept to
-a readable length. No other programming language may be introduced into the project.
-Rationale: CS50P is a Python course; a single language and a shared style keep the codebase
-consistent, gradable, and idiomatic for review.
+All source code MUST be written in Python 3 and conform to PEP 8 style: 4-space indentation,
+`snake_case` for functions and variables, descriptive names, and readable line lengths. Any
+additional languages (e.g. microcontroller firmware) are permitted only where the platform requires
+it and MUST be isolated from the Python codebase. Rationale: a single primary language and a shared
+style keep the codebase consistent, reviewable, and approachable for contributors and demonstrators.
 
-### II. Standard Library Only (No Third-Party Dependencies)
+### II. Testable Core, Thin UI
 
-The project MUST use only the Python standard library. Installing or importing third-party
-packages (anything requiring `pip install`) is PROHIBITED. If a capability is not available
-in the standard library, the project MUST either implement it directly or narrow its scope.
-Rationale: CS50P requires submissions to run without external dependencies, ensuring the
-project is reproducible and gradable on the course's clean environment.
+Business logic MUST live in importable, UI-independent modules; user interfaces (CLI handlers and GUI
+widgets) MUST stay thin and delegate to that logic. No non-trivial decision-making, threshold
+evaluation, fault classification, or I/O orchestration may be embedded directly in a GUI widget or
+print statement. Rationale: separating logic from presentation is what makes the system unit-testable
+(Principle III) and lets the same core power both SentinelCLI and SentinelGUI.
 
-### III. Test Coverage in test_project.py (NON-NEGOTIABLE)
+### III. Automated Test Coverage (pytest) — NON-NEGOTIABLE
 
-Every custom function defined in `project.py` (other than `main`) MUST have at least one
-corresponding `pytest` test in `test_project.py`. Test function names MUST follow the
-`test_<function_name>` convention. Tests MUST cover normal cases and at least one edge or
-error case, and the full suite MUST pass (`pytest` green) before the project is considered
-complete. Rationale: per-function tests are a hard CS50P requirement and are the project's
-primary correctness guarantee for an environment without integration infrastructure.
+Every logic module MUST have `pytest` coverage exercising a normal case and at least one edge or
+error case; the full suite MUST pass (`pytest` green) before a change is considered complete. Test
+names SHOULD follow the `test_<function_or_behavior>` convention. Thin UI/view code containing no
+business logic is exempt from unit testing and is validated manually against the relevant
+quickstart/acceptance scenarios. Rationale: per-module tests are the project's primary correctness
+guarantee, especially for fault-diagnosis logic that must behave predictably during a live demo.
 
-### IV. CLI via argparse
+### IV. Offline-First & Graceful Degradation
 
-The project MUST present a command-line interface as its only user interface, and command-line
-arguments MUST be parsed with the standard-library `argparse` module. Manual `sys.argv`
-parsing for user-facing options, interactive-only flows with no CLI, or any GUI/web interface
-are out of scope. Rationale: a uniform `argparse` CLI makes the program scriptable, gives
-users automatic `--help` output, and matches CS50P's command-line orientation.
+All core capabilities — data acquisition, threshold/alarm evaluation, rule-based diagnosis,
+visualization, recording, and emergency shutdown — MUST function with no network connection. Any
+optional external service (e.g. AI-assisted diagnosis) MUST run without blocking the core, MUST be
+bounded by a timeout, and MUST fall back cleanly to offline behavior when unavailable, disabled, or
+slow. Rationale: an exhibition or teaching environment cannot depend on connectivity or an API key;
+the product must be compelling and safe even fully offline.
 
-### V. Human-Readable Error Messages
+### V. Human-Readable Errors
 
-All error and failure output MUST be expressed in clear, human-readable language that tells
-the user what went wrong and how to correct it. Raw tracebacks, bare exception dumps, or
-cryptic codes MUST NOT be the user-facing failure mode for anticipated errors; invalid input
-MUST be caught and reported plainly (e.g., to `stderr` or via `sys.exit("message")`).
-Rationale: a CLI tool is only usable if its failures are understandable without reading the
-source.
+All error and failure output MUST be expressed in clear, human-readable language that tells the user
+what went wrong and how to proceed. Raw tracebacks, bare exception dumps, or cryptic codes MUST NOT
+be the user-facing failure mode for anticipated errors: in the CLI, report plainly (e.g. to `stderr`
+or via `sys.exit("message")`); in the GUI, surface a status banner or message rather than crashing.
+Rationale: both a CLI tool and an exhibition dashboard are only usable if their failures are
+understandable without reading the source.
+
+### VI. Secure Configuration & Reproducible Dependencies
+
+Secrets and credentials (e.g. AI API keys) MUST NOT be hardcoded or committed; they MUST come from
+environment variables or untracked configuration (`.env`) and be documented. Third-party dependencies
+are permitted and MUST be declared and version-pinned in a manifest (e.g. `requirements.txt`) so any
+environment can be reproduced; prefer the smallest set of well-maintained libraries that satisfy the
+requirement. Rationale: keeping secrets out of the repository and dependencies explicit makes the
+project safe to share publicly and reliable to set up on demo hardware.
 
 ## Project Constraints
 
-- The project MUST follow the CS50P final project layout: a `project.py` containing `main()`
-  and the required custom functions at the same indentation level (not nested), with tests in
-  `test_project.py` at the project root.
-- A Prompt History Record (PHR) MUST be recorded under `history/prompts/` for every user
-  prompt, preserving the input verbatim and without truncation.
-- Architecturally significant decisions MUST be surfaced as ADR suggestions and, on user
-  consent, recorded under `history/adr/`. ADRs are never auto-created.
-- Secrets and tokens MUST NOT be hardcoded; configuration belongs in `.env` and documentation.
+- The repository hosts two cooperating deliverables: the SentinelCLI tool and the SentinelGUI
+  desktop application. Shared logic SHOULD be importable by both; the GUI MAY import and reuse CLI
+  logic, and MUST NOT break the CLI when doing so.
+- A Prompt History Record (PHR) MUST be recorded under `history/prompts/` for every user prompt,
+  preserving the input verbatim and without truncation.
+- Architecturally significant decisions MUST be surfaced as ADR suggestions and, on user consent,
+  recorded under `history/adr/`. ADRs are never auto-created.
+- Secrets and tokens MUST NOT be hardcoded; configuration belongs in environment/`.env` and
+  documentation (Principle VI).
 - Changes MUST be the smallest viable diff (YAGNI); unrelated refactoring is out of scope for a
   given change.
 
 ## Development Workflow & Quality Gates
 
-- Tests in `test_project.py` MUST be runnable and MUST pass via `pytest` before a change is
+- The `pytest` suite for all logic modules MUST be runnable and MUST pass before a change is
   considered complete (Principle III).
-- Code MUST be checked against PEP 8 (e.g., a style check such as `style50`, `flake8`, or
-  manual review) before submission (Principle I).
-- The project MUST be confirmed to run end-to-end from the command line using only the standard
-  library, with no `pip install` step required (Principles II & IV).
-- Every change MUST inline its acceptance criteria as checkboxes or tests, and state explicit
-  error paths and constraints.
+- Code MUST be checked against PEP 8 (e.g. a style check such as `flake8` or manual review) before a
+  change is finalized (Principle I).
+- Offline behavior MUST be verified for any change touching core capabilities: the affected feature
+  is confirmed to work with networking disabled, and any optional online path falls back cleanly
+  (Principle IV).
+- Third-party dependencies introduced by a change MUST be pinned in the appropriate manifest and the
+  run/install steps documented (Principle VI).
+- Every change MUST inline its acceptance criteria as checkboxes or tests, and state explicit error
+  paths and constraints.
 - Code review MUST verify compliance with these principles; any deviation MUST be justified in
-  writing or the change MUST be corrected.
+  writing (and, if significant, captured as an ADR) or the change MUST be corrected.
 
 ## Governance
 
-This constitution supersedes all other development practices in this workspace. Amendments
-MUST be documented in this file, accompanied by a version bump per the policy below, and
-propagated to dependent templates (`plan-template.md`, `spec-template.md`,
-`tasks-template.md`) and runtime guidance (`CLAUDE.md`) in the same change.
+This constitution supersedes all other development practices in this workspace. Amendments MUST be
+documented in this file, accompanied by a version bump per the policy below, and propagated to
+dependent templates (`plan-template.md`, `spec-template.md`, `tasks-template.md`) and runtime
+guidance (`CLAUDE.md`) in the same change.
 
 Versioning policy for this constitution:
-- MAJOR: backward-incompatible governance changes or removal/redefinition of a principle.
+- MAJOR: backward-incompatible governance changes or removal/redefinition of a principle
+  (including a change to a principle's applicability scope).
 - MINOR: a new principle or section is added, or existing guidance is materially expanded.
 - PATCH: clarifications, wording, or typo fixes that do not change meaning.
 
-Simplicity is the default: prefer the smallest viable change that satisfies the requirement,
-and justify any added complexity against a simpler alternative that was considered and
-rejected for a concrete reason. Compliance review: all changes MUST verify adherence to these
-principles. Use `CLAUDE.md` and the `.specify/` templates for runtime development guidance.
+Simplicity is the default: prefer the smallest viable change that satisfies the requirement, and
+justify any added complexity against a simpler alternative that was considered and rejected for a
+concrete reason. Compliance review: all changes MUST verify adherence to these principles. Use
+`CLAUDE.md` and the `.specify/` templates for runtime development guidance.
 
-**Version**: 2.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-14
+**Version**: 3.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-19

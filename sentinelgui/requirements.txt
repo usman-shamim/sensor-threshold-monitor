@@ -1,0 +1,6 @@
+# SentinelGUI runtime dependencies (pinned for reproducibility — Constitution v3.0.0, Principle VI).
+# SentinelCLI (project.py) itself uses only the standard library; these are GUI-only.
+pyserial==3.5
+pandas==2.2.2
+customtkinter==5.2.2
+matplotlib==3.9.0
