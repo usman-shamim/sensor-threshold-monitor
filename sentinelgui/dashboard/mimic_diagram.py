@@ -1,0 +1,61 @@
+"""Process mimic diagram (FR-016): Reservoir → Pump → Flow → Pressure → Reactor → Reservoir.
+
+Drawn on a plain Tk canvas; the stage tied to an active fault is highlighted by colour.
+"""
+
+from __future__ import annotations
+
+import tkinter as tk
+
+import customtkinter as ctk
+
+from ..models import PROCESS_STAGES
+from . import theme
+
+_NODE_W = 120
+_NODE_H = 54
+_GAP = 46
+
+
+class MimicDiagram(ctk.CTkFrame):
+    def __init__(self, parent, kiosk: bool = False):
+        super().__init__(parent, fg_color=theme.PANEL, corner_radius=10)
+        title = ctk.CTkLabel(self, text="Process Mimic", text_color=theme.MUTED,
+                             font=theme.font(14, kiosk=kiosk))
+        title.pack(anchor="w", padx=12, pady=(10, 0))
+        self._canvas = tk.Canvas(self, bg=theme.PANEL, highlightthickness=0, height=120)
+        self._canvas.pack(fill="both", expand=True, padx=10, pady=10)
+        self._nodes: dict[str, int] = {}
+        self._labels: dict[str, int] = {}
+        self._canvas.bind("<Configure>", lambda e: self._draw())
+
+    def _draw(self) -> None:
+        self._canvas.delete("all")
+        self._nodes.clear()
+        self._labels.clear()
+        y = 50
+        x = 20
+        prev = None
+        for stage in PROCESS_STAGES:
+            rect = self._canvas.create_rectangle(
+                x, y, x + _NODE_W, y + _NODE_H, fill=theme.ZONE_COLORS["normal"],
+                outline=theme.PANEL_LIGHT, width=2,
+            )
+            text = self._canvas.create_text(
+                x + _NODE_W / 2, y + _NODE_H / 2, text=stage, fill="#ffffff",
+                font=theme.font(10, bold=True), width=_NODE_W - 8,
+            )
+            self._nodes[stage] = rect
+            self._labels[stage] = text
+            if prev is not None:
+                self._canvas.create_line(prev, y + _NODE_H / 2, x, y + _NODE_H / 2,
+                                         fill=theme.MUTED, width=2, arrow=tk.LAST)
+            prev = x + _NODE_W
+            x += _NODE_W + _GAP
+
+    def update_health(self, stage_health: dict) -> None:
+        if not self._nodes:
+            self._draw()
+        for stage, rect in self._nodes.items():
+            health = stage_health.get(stage, "normal")
+            self._canvas.itemconfigure(rect, fill=theme.ZONE_COLORS.get(health, theme.ZONE_COLORS["normal"]))

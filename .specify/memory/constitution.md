@@ -1,188 +1,152 @@
+
 <!--
 SYNC IMPACT REPORT
 ==================
 Version change: 2.0.0 → 3.0.0
-Bump rationale: MAJOR. The five CS50P-specific principles (Python-Only & PEP 8 Style,
-  Standard Library Only, Test Coverage in test_project.py, CLI via argparse,
-  Human-Readable Error Messages) are removed and replaced by seven principles for an
-  industrial chemical-process monitoring exhibition system (SentinelGUI). This is a
-  backward-incompatible redefinition of the entire principle set and rescopes the
-  project from a single-file CS50P submission to a modular exhibition application.
+Bump rationale: MAJOR. The CS50P-specific principle set is removed entirely and replaced by
+  principles appropriate to this project — a sensor threshold monitoring system comprising the
+  SentinelCLI command-line tool and the SentinelGUI desktop exhibition dashboard. This is a
+  backward-incompatible redefinition of the whole principle set. The previous Standard-Library-Only
+  and CLI-only mandates (CS50P submission constraints) are removed; third-party dependencies and a
+  GUI are now first-class. Test discipline, human-readable errors, offline-first reliability, and
+  secrets hygiene are retained and generalized.
 
 Modified principles:
-  - I. Python-Only & PEP 8 Style                        → REMOVED (folded into VIII. Maintainable Python)
-  - II. Standard Library Only                           → REMOVED (project now uses PySerial, Pandas, CustomTkinter, Matplotlib)
-  - III. Test Coverage in test_project.py               → VII. Testability (broadened to hardware-independent logic tests)
-  - IV. CLI via argparse                                → REMOVED (primary surface is GUI dashboard)
-  - V. Human-Readable Error Messages                    → folded into IV. Safety & Fault Transparency
-  - (new) I. Exhibition First
-  - (new) II. Modular Architecture
-  - (new) III. Offline Reliability (NON-NEGOTIABLE)
-  - (new) IV. Safety & Fault Transparency
-  - (new) V. Industrial User Experience
-  - (new) VI. Real-Time Performance
-  - (new) VII. Testability
-  - (new) VIII. Maintainable Python
+  - I. Python-Only & PEP 8 Style            → I. Python-First & PEP 8 Style (CS50P rationale removed)
+  - II. Standard Library Only               → REMOVED (replaced by VI. Secure Config & Reproducible
+                                              Dependencies — third-party deps are now permitted/pinned)
+  - III. Test Coverage in test_project.py   → III. Automated Test Coverage (pytest) — generalized
+                                              from "every project.py function" to all testable logic
+  - IV. CLI via argparse                    → REMOVED (the project ships both a CLI and a GUI)
+  - V. Human-Readable Error Messages        → V. Human-Readable Errors (retained, broadened to GUI)
+  - (new) II. Testable Core, Thin UI
+  - (new) IV. Offline-First & Graceful Degradation
+  - (new) VI. Secure Configuration & Reproducible Dependencies
 
 Added sections:
-  - Core Principles I–VIII (industrial-monitoring-specific)
-  - Technology Stack (backend, frontend, hardware, AI)
+  - Core Principles I–VI (project-specific)
 Removed sections:
-  - CS50P-specific Project Constraints (single-file layout, no third-party deps)
-Renamed/condensed sections:
-  - Development Workflow & Quality Gates (rescoped from CS50P submission to exhibition readiness)
-  - Governance (rescoped to emphasise exhibition impact over CS50P submission gates)
+  - All CS50P-specific framing (submission layout mandate, "gradable on clean environment", etc.)
 
 Templates requiring updates:
-  - .specify/templates/plan-template.md ........ ✅ aligned (Constitution Check references
-    constitution generically; no hardcoded principle names)
-  - .specify/templates/spec-template.md ........ ✅ aligned (no constitution refs)
-  - .specify/templates/tasks-template.md ....... ⚠ review (single-project / test-first ordering
-    still consistent, but modular architecture may warrant module-grouped task layout in future
-    revisions)
-  - CLAUDE.md .................................. ✅ aligned (PHR/ADR guarantees retained;
-    no principle names hardcoded)
-  - README.md / specs/001-sensor-monitor ....... ⚠ review (existing CLI-only "Sensor Threshold
-    Monitor" feature predates SentinelGUI scope; plan/spec/tasks may need realignment as the
-    project evolves toward the full exhibition system)
+  - .specify/templates/plan-template.md ........ ✅ aligned (Constitution Check is generic:
+    "Gates determined based on constitution file"; no principle names hardcoded)
+  - .specify/templates/spec-template.md ........ ✅ aligned (no constitution references)
+  - .specify/templates/tasks-template.md ....... ✅ aligned (test-first ordering and project
+    structure remain consistent with Principles II & III)
+  - CLAUDE.md .................................. ✅ aligned (PHR/ADR guarantees and policies retained)
 
 Follow-up TODOs: None. All placeholders resolved.
 -->
 
-# SentinelGUI Exhibition Constitution
+# Sensor Threshold Monitor Constitution
+
+This constitution governs the Sensor Threshold Monitor project, which comprises **SentinelCLI** (a
+Python command-line tool for reading sensor data and checking it against thresholds) and
+**SentinelGUI** (a desktop, SCADA-style monitoring and fault-diagnosis dashboard built for live
+exhibition and teaching use). All code in the repository — CLI, GUI, and shared logic — is bound by
+the principles below unless a principle states a narrower scope.
 
 ## Core Principles
 
-### I. Exhibition First
+### I. Python-First & PEP 8 Style
 
-Every feature MUST contribute directly to the value of the exhibition: a reliable, visually
-impressive, and educational demonstration of chemical process monitoring, fault detection,
-and AI-assisted diagnostics. Work that does not advance demo readiness, visual clarity, or
-educational impact MUST be deferred or dropped.
-Rationale: the system's purpose is to demonstrate chemical engineering, process safety,
-instrumentation, digital twins, and AI-assisted operations to a live audience; scope decisions
-are judged against that audience, not against generic software-engineering ideals.
+All source code MUST be written in Python 3 and conform to PEP 8 style: 4-space indentation,
+`snake_case` for functions and variables, descriptive names, and readable line lengths. Any
+additional languages (e.g. microcontroller firmware) are permitted only where the platform requires
+it and MUST be isolated from the Python codebase. Rationale: a single primary language and a shared
+style keep the codebase consistent, reviewable, and approachable for contributors and demonstrators.
 
-### II. Modular Architecture
+### II. Testable Core, Thin UI
 
-The system MUST be decomposed into independent, loosely coupled, individually replaceable
-modules covering at minimum: Sensor Acquisition, Serial Communication, Data Processing,
-Fault Detection, ReAct Agent, SentinelCLI Integration, Dashboard, and Data Logging. Modules
-MUST communicate through explicit interfaces and MUST NOT reach into each other's internals.
-Rationale: modular boundaries let the team swap mock sensors for real hardware (and back),
-demonstrate one subsystem at a time during the exhibition, and recover quickly when a single
-module fails on the show floor.
+Business logic MUST live in importable, UI-independent modules; user interfaces (CLI handlers and GUI
+widgets) MUST stay thin and delegate to that logic. No non-trivial decision-making, threshold
+evaluation, fault classification, or I/O orchestration may be embedded directly in a GUI widget or
+print statement. Rationale: separating logic from presentation is what makes the system unit-testable
+(Principle III) and lets the same core power both SentinelCLI and SentinelGUI.
 
-### III. Offline Reliability (NON-NEGOTIABLE)
+### III. Automated Test Coverage (pytest) — NON-NEGOTIABLE
 
-The core system — Sensor Monitoring, Fault Detection, Alarm Generation, and Dashboard
-Updates — MUST continue functioning with no internet access and no external service
-availability. AI features (ReAct Agent, SentinelCLI diagnostics) are enhancements and MUST
-be optional; failure or absence of any AI service MUST NOT degrade core monitoring,
-alarms, or the dashboard.
-Rationale: exhibition venues frequently have unreliable or absent connectivity; a system
-that goes dark when Wi-Fi drops fails its single most important moment.
+Every logic module MUST have `pytest` coverage exercising a normal case and at least one edge or
+error case; the full suite MUST pass (`pytest` green) before a change is considered complete. Test
+names SHOULD follow the `test_<function_or_behavior>` convention. Thin UI/view code containing no
+business logic is exempt from unit testing and is validated manually against the relevant
+quickstart/acceptance scenarios. Rationale: per-module tests are the project's primary correctness
+guarantee, especially for fault-diagnosis logic that must behave predictably during a live demo.
 
-### IV. Safety & Fault Transparency
+### IV. Offline-First & Graceful Degradation
 
-Every detected fault MUST be surfaced to the operator with, at minimum: Fault Name,
-Severity Level, Probable Cause, and Recommended Action. The system MUST NOT silently
-swallow exceptions, drop alarms, or mask failures behind generic UI states; error and
-failure output MUST be expressed in clear, human-readable language.
-Rationale: the exhibition demonstrates process safety; opaque or silent failures would
-undermine the educational message and erode trust in the demo.
+All core capabilities — data acquisition, threshold/alarm evaluation, rule-based diagnosis,
+visualization, recording, and emergency shutdown — MUST function with no network connection. Any
+optional external service (e.g. AI-assisted diagnosis) MUST run without blocking the core, MUST be
+bounded by a timeout, and MUST fall back cleanly to offline behavior when unavailable, disabled, or
+slow. Rationale: an exhibition or teaching environment cannot depend on connectivity or an API key;
+the product must be compelling and safe even fully offline.
 
-### V. Industrial User Experience
+### V. Human-Readable Errors
 
-The dashboard MUST resemble a lightweight SCADA or Digital Twin interface and MUST provide
-the following views: Live Process Dashboard, Process Mimic Diagram, Alarm Center, AI
-Operator Panel, and Historical Trends. Layout, typography, and colour MUST follow
-industrial-control conventions (e.g., red/amber/green alarm states, persistent status
-banners) so that a process engineer recognises the interface immediately.
-Rationale: visual familiarity is what makes the exhibition legible to industry visitors
-and educational for students; an unfamiliar UI dilutes the demonstration.
+All error and failure output MUST be expressed in clear, human-readable language that tells the user
+what went wrong and how to proceed. Raw tracebacks, bare exception dumps, or cryptic codes MUST NOT
+be the user-facing failure mode for anticipated errors: in the CLI, report plainly (e.g. to `stderr`
+or via `sys.exit("message")`); in the GUI, surface a status banner or message rather than crashing.
+Rationale: both a CLI tool and an exhibition dashboard are only usable if their failures are
+understandable without reading the source.
 
-### VI. Real-Time Performance
+### VI. Secure Configuration & Reproducible Dependencies
 
-Sensor values MUST update at least once per second. Charts, alarm states, and AI
-diagnostics MUST update without noticeable lag (target: visible refresh within ~1 second
-of the underlying event). UI work that would block the event loop MUST run off the UI
-thread.
-Rationale: a monitoring dashboard that lags loses its credibility as a real-time system,
-which is the central claim of the exhibition.
-
-### VII. Testability
-
-All business logic — fault-detection rules, alarm generation, diagnosis engines, and data
-processing — MUST be testable independently of physical hardware. Modules that touch
-sensors or serial ports MUST be designed so that they can be exercised against recorded
-fixtures or in-memory fakes. Hardware-independent automated tests MUST exist for fault
-detection and alarm generation and MUST pass before a demo build is released.
-Rationale: hardware is unreliable and not always available; testable logic is the only way
-to gain confidence before the exhibition without burning bench time.
-
-### VIII. Maintainable Python
-
-All Python code MUST be readable and maintainable: PEP 8 style, descriptive `snake_case`
-identifiers, type hints on public module interfaces, and small focused functions. Secrets
-and tokens MUST NOT be hardcoded; configuration belongs in `.env` or a documented config
-file. Changes MUST be the smallest viable diff; unrelated refactoring is out of scope for a
-given change.
-Rationale: the team is small, the demo deadline is fixed, and the codebase is also a
-teaching artifact; unmaintainable code costs both demo reliability and educational value.
-
-## Technology Stack
-
-The following stack is part of the constitution; substitutions require an ADR.
-
-- **Backend**: Python, PySerial, Pandas
-- **Frontend**: CustomTkinter, Matplotlib
-- **Hardware**: Arduino Nano, DS18B20 (temperature), YF-S201 (flow), pressure sensor,
-  relay module
-- **AI (optional, never required for core operation)**: SentinelCLI, ReAct Agent
+Secrets and credentials (e.g. AI API keys) MUST NOT be hardcoded or committed; they MUST come from
+environment variables or untracked configuration (`.env`) and be documented. Third-party dependencies
+are permitted and MUST be declared and version-pinned in a manifest (e.g. `requirements.txt`) so any
+environment can be reproduced; prefer the smallest set of well-maintained libraries that satisfy the
+requirement. Rationale: keeping secrets out of the repository and dependencies explicit makes the
+project safe to share publicly and reliable to set up on demo hardware.
 
 ## Project Constraints
 
-- The system MUST run end-to-end on a single demo machine without internet access.
-- A Prompt History Record (PHR) MUST be recorded under `history/prompts/` for every user
-  prompt, preserving the input verbatim and without truncation.
-- Architecturally significant decisions MUST be surfaced as ADR suggestions and, on user
-  consent, recorded under `history/adr/`. ADRs are never auto-created.
-- AI features MUST be wrapped in failure-tolerant adapters: any exception, timeout, or
-  missing dependency MUST degrade gracefully to the offline core (Principle III).
-- Changes MUST cite affected modules explicitly; cross-module changes MUST justify the
-  coupling against Principle II.
+- The repository hosts two cooperating deliverables: the SentinelCLI tool and the SentinelGUI
+  desktop application. Shared logic SHOULD be importable by both; the GUI MAY import and reuse CLI
+  logic, and MUST NOT break the CLI when doing so.
+- A Prompt History Record (PHR) MUST be recorded under `history/prompts/` for every user prompt,
+  preserving the input verbatim and without truncation.
+- Architecturally significant decisions MUST be surfaced as ADR suggestions and, on user consent,
+  recorded under `history/adr/`. ADRs are never auto-created.
+- Secrets and tokens MUST NOT be hardcoded; configuration belongs in environment/`.env` and
+  documentation (Principle VI).
+- Changes MUST be the smallest viable diff (YAGNI); unrelated refactoring is out of scope for a
+  given change.
 
 ## Development Workflow & Quality Gates
 
-- Hardware-independent automated tests for fault detection and alarm generation MUST pass
-  before any demo build (Principle VII).
-- A dry run of the dashboard with simulated sensor data MUST be performed before any
-  exhibition or rehearsal, exercising at least one nominal scenario and one fault scenario
-  per supported sensor.
-- The offline mode MUST be verified by disconnecting all network interfaces and confirming
-  that monitoring, alarms, and dashboard updates continue (Principle III).
-- Every change MUST inline acceptance criteria as checkboxes or tests and MUST state
-  explicit error paths and degradation behaviour.
-- Code review MUST verify compliance with these principles; any deviation MUST be
-  justified in writing (typically via an ADR) or the change MUST be corrected.
+- The `pytest` suite for all logic modules MUST be runnable and MUST pass before a change is
+  considered complete (Principle III).
+- Code MUST be checked against PEP 8 (e.g. a style check such as `flake8` or manual review) before a
+  change is finalized (Principle I).
+- Offline behavior MUST be verified for any change touching core capabilities: the affected feature
+  is confirmed to work with networking disabled, and any optional online path falls back cleanly
+  (Principle IV).
+- Third-party dependencies introduced by a change MUST be pinned in the appropriate manifest and the
+  run/install steps documented (Principle VI).
+- Every change MUST inline its acceptance criteria as checkboxes or tests, and state explicit error
+  paths and constraints.
+- Code review MUST verify compliance with these principles; any deviation MUST be justified in
+  writing (and, if significant, captured as an ADR) or the change MUST be corrected.
 
 ## Governance
 
-This constitution supersedes all other development practices in this workspace. Amendments
-MUST be documented in this file, accompanied by a version bump per the policy below, and
-propagated to dependent templates (`plan-template.md`, `spec-template.md`,
-`tasks-template.md`) and runtime guidance (`CLAUDE.md`) in the same change.
+This constitution supersedes all other development practices in this workspace. Amendments MUST be
+documented in this file, accompanied by a version bump per the policy below, and propagated to
+dependent templates (`plan-template.md`, `spec-template.md`, `tasks-template.md`) and runtime
+guidance (`CLAUDE.md`) in the same change.
 
 Versioning policy for this constitution:
-- MAJOR: backward-incompatible governance changes or removal/redefinition of a principle.
+- MAJOR: backward-incompatible governance changes or removal/redefinition of a principle
+  (including a change to a principle's applicability scope).
 - MINOR: a new principle or section is added, or existing guidance is materially expanded.
 - PATCH: clarifications, wording, or typo fixes that do not change meaning.
 
-When choosing between complexity and exhibition impact, prefer the simpler solution unless
-the more complex solution provides significant demonstration value that cannot be achieved
-otherwise; the added complexity MUST be justified against the simpler alternative that was
-considered and rejected. Compliance review: all changes MUST verify adherence to these
-principles. Use `CLAUDE.md` and the `.specify/` templates for runtime development guidance.
+Simplicity is the default: prefer the smallest viable change that satisfies the requirement, and
+justify any added complexity against a simpler alternative that was considered and rejected for a
+concrete reason. Compliance review: all changes MUST verify adherence to these principles. Use
+`CLAUDE.md` and the `.specify/` templates for runtime development guidance.
 
-**Version**: 3.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-17
+**Version**: 3.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-19

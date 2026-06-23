@@ -1,7 +1,7 @@
-# Specification Quality Checklist: SentinelGUI — Reactor Cooling Loop Monitoring & Diagnosis Dashboard
+# Specification Quality Checklist: SentinelGUI — Reactor Cooling Loop Monitor & Fault Diagnosis
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-06-17
+**Created**: 2026-06-18
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,14 +31,15 @@
 
 ## Notes
 
-- Items marked incomplete require spec updates before `/sp.clarify` or `/sp.plan`
-- Concrete per-sensor threshold values are intentionally deferred to `/sp.clarify` or
-  `/sp.plan`; the spec documents the structure (warning low/high, critical low/high) and
-  reads them from a configuration file (FR-023), which is sufficient for a technology-
-  agnostic requirement.
-- Hardware identifiers (DS18B20, YF-S201, Arduino Nano) are retained because they appear
-  in the user's original input as identifying context for the exhibition rig. They are
-  not implementation choices the spec is making; they are facts about the physical
-  system under observation.
-- SentinelCLI is named as an external optional service the system integrates with, not
-  as an implementation choice for this feature.
+- Two scope-defining decisions were resolved with the user before drafting (no `[NEEDS
+  CLARIFICATION]` markers remain):
+  - **Emergency Shutdown** = UI safe-state latch **plus** best-effort physical stop with a clear
+    fallback message when hardware cannot be actuated (FR-020/FR-021).
+  - **No-hardware operation** = a **built-in fault simulator** drives the full dashboard with no
+    Arduino attached (US3, FR-003).
+- Hardware identifiers (Arduino, DS18B20, YF-S201, USB serial) are retained as fixed external
+  dependencies / the data source — they describe the rig being observed, not an implementation
+  choice for the application, so they do not violate the "no implementation details" item.
+- The threshold/warning-vs-critical defaults and AI-reuse boundary are recorded in Assumptions for
+  the planning phase to confirm.
+- Items marked incomplete require spec updates before `/sp.clarify` or `/sp.plan`. All items pass.

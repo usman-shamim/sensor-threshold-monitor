@@ -1,0 +1,12 @@
+{
+  "serial": { "port": "COM3", "baud": 115200, "read_timeout_s": 1.0 },
+  "thresholds": {
+    "temperature": { "critical": {"min": 0,   "max": 100}, "warning": {"min": 10, "max": 90} },
+    "pressure":    { "critical": {"min": 1.0, "max": 5.0}, "warning": {"min": 1.4, "max": 4.6} },
+    "flow_rate":   { "critical": {"min": 10,  "max": 50},  "warning": {"min": 14, "max": 46} }
+  },
+  "window": { "samples": 300, "slope_n": 10 },
+  "alarm": { "debounce_samples": 2 },
+  "ai": { "timeout_s": 10 },
+  "recording": { "dir": "." }
+}
