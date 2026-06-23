@@ -18,8 +18,8 @@ class TrendChart(ctk.CTkFrame):
         self._ax = self._fig.add_subplot(111)
         self._style_axes(label)
         self._line, = self._ax.plot([], [], color=theme.ACCENT, linewidth=1.6)
-        self._canvas = FigureCanvasTkAgg(self._fig, master=self)
-        self._canvas.get_tk_widget().pack(fill="both", expand=True, padx=6, pady=6)
+        self._mpl_canvas = FigureCanvasTkAgg(self._fig, master=self)
+        self._mpl_canvas.get_tk_widget().pack(fill="both", expand=True, padx=6, pady=6)
 
     def _style_axes(self, label):
         self._ax.set_facecolor(theme.PANEL)
@@ -37,4 +37,4 @@ class TrendChart(ctk.CTkFrame):
         low, high = min(series), max(series)
         pad = (high - low) * 0.1 or 1.0
         self._ax.set_ylim(low - pad, high + pad)
-        self._canvas.draw_idle()
+        self._mpl_canvas.draw_idle()

@@ -29,7 +29,9 @@ class MimicDiagram(ctk.CTkFrame):
         self._labels: dict[str, int] = {}
         self._canvas.bind("<Configure>", lambda e: self._draw())
 
-    def _draw(self) -> None:
+    def _draw(self, **kwargs) -> None:
+        if not hasattr(self, "_nodes"):
+            return
         self._canvas.delete("all")
         self._nodes.clear()
         self._labels.clear()
