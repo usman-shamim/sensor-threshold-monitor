@@ -13,8 +13,9 @@ from ..models import PROCESS_STAGES
 from . import theme
 
 class MimicDiagram(ctk.CTkFrame):
-    def __init__(self, parent, kiosk: bool = False):
+    def __init__(self, parent, kiosk: bool = False, stages=None):
         super().__init__(parent, fg_color=theme.PANEL, corner_radius=10)
+        self._stages = tuple(stages) if stages else PROCESS_STAGES
         title = ctk.CTkLabel(self, text="Process Mimic", text_color=theme.MUTED,
                              font=theme.font(14, kiosk=kiosk))
         title.pack(anchor="w", padx=12, pady=(10, 0))
@@ -32,7 +33,7 @@ class MimicDiagram(ctk.CTkFrame):
         self._labels.clear()
         cw = self._canvas.winfo_width() or 600
         ch = self._canvas.winfo_height() or 100
-        n = len(PROCESS_STAGES)
+        n = len(self._stages)
         margin = 10
         gap = max(8, cw // (n * 8))
         node_w = max(50, (cw - 2 * margin - gap * (n - 1)) // n)
@@ -40,7 +41,7 @@ class MimicDiagram(ctk.CTkFrame):
         y = (ch - node_h) // 2
         x = margin
         prev = None
-        for stage in PROCESS_STAGES:
+        for stage in self._stages:
             rect = self._canvas.create_rectangle(
                 x, y, x + node_w, y + node_h, fill=theme.ZONE_COLORS["normal"],
                 outline=theme.PANEL_LIGHT, width=2,

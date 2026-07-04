@@ -1,0 +1,37 @@
+{
+  "name": "Distillation Column",
+  "description": "Continuous distillation unit — monitor feed rate, column pressure, and top-tray temperature for flooding and upset conditions",
+  "sensors": {
+    "temperature": { "label": "Column Temp", "unit": "°C" },
+    "flow_rate": { "label": "Feed Rate", "unit": "L/min" },
+    "pressure": { "label": "Column ΔP", "unit": "bar" }
+  },
+  "stages": ["Feed Tank", "Reboiler", "Flow Sensor", "Pressure Sensor", "Column"],
+  "stage_sensor": {
+    "Flow Sensor": "flow_rate",
+    "Pressure Sensor": "pressure",
+    "Column": "temperature"
+  },
+  "nominal": { "temperature": 80.0, "flow_rate": 25.0, "pressure": 1.5 },
+  "fault_targets": {
+    "blockage": { "flow_rate": 5.0, "pressure": 3.5 },
+    "pump_failure": { "flow_rate": 1.0, "pressure": 0.3 },
+    "cavitation": { "pressure": 0.3 },
+    "fouling": { "temperature": 110.0, "flow_rate": 20.0 },
+    "thermal_runaway": { "temperature": 130.0 },
+    "cooling_failure": { "temperature": 115.0 }
+  },
+  "thresholds": {
+    "temperature": { "critical": { "min": 40, "max": 120 }, "warning": { "min": 50, "max": 110 } },
+    "flow_rate": { "critical": { "min": 5, "max": 40 }, "warning": { "min": 8, "max": 35 } },
+    "pressure": { "critical": { "min": 0.2, "max": 3.0 }, "warning": { "min": 0.5, "max": 2.5 } }
+  },
+  "fault_explanations": {
+    "pump_failure": "Pump failure — feed flow has stopped. The reboiler circulation pump may have tripped or lost prime. Without feed the column runs dry and separation stops completely.",
+    "blockage": "Flooding detected — liquid is backing up in the column. Excessive liquid holdup on trays restricts vapour flow, causing a sharp pressure drop (ΔP) increase across the column while feed rate drops. May be caused by fouled trays, excessive reflux, or downcomer blockage.",
+    "cavitation": "Cavitation — pressure at the pump suction has dropped below the liquid's vapour pressure. Vapour bubbles form in the pump casing and collapse violently, causing unstable flow and pressure oscillation. Check suction line for restrictions or low feed tank level.",
+    "fouling": "Tray fouling — deposits are building up on column trays, reducing vapour-liquid contact area and lowering separation efficiency. Temperature profile is shifting upward as the column compensates, while flow is mildly restricted. Common from polymerised heavies or salts in the feed.",
+    "thermal_runaway": "Column overheating — top-tray temperature has exceeded the critical limit. The reboiler may be over-firing or the reflux ratio has dropped, allowing heavy components to rise beyond the rectifying section. Product quality is compromised — reduce reboiler duty immediately.",
+    "cooling_failure": "Condenser failure — the overhead condenser is not removing heat effectively. Top-tray temperature is rising despite adequate feed rate, indicating the cooling water supply is insufficient, the condenser is fouled, or the reflux pump has failed."
+  }
+}

@@ -33,6 +33,7 @@ def test_step_no_alarm_when_normal():
     assert result.new_alarms == []
     assert result.diagnosis is None
     assert result.stage_health["Reactor"] == "normal"
+    assert result.trace == []
 
 
 def test_step_raises_alarm_and_diagnoses():
@@ -48,15 +49,25 @@ def test_step_raises_alarm_and_diagnoses():
     assert result.diagnosis is not None
     assert result.diagnosis.fault == "thermal_runaway"
     assert result.stage_health["Reactor"] == "critical"
+    assert len(result.trace) >= 1
+    assert "[critical]" in result.trace[0]
+    assert "Observe:" in result.trace[0]
+    assert "Reason:" in result.trace[0]
+    assert "Act:" in result.trace[0]
+    assert "thermal_runaway" in result.trace[0]
 
 
 def test_step_clears_alarm_on_return_to_normal():
     agent, window = _agent()
     hot = Reading(timestamp="t1", values={"temperature": 105, "flow_rate": 30, "pressure": 3.0})
     window.append(hot)
-    agent.step(hot)
+    result1 = agent.step(hot)
+    assert len(result1.trace) >= 1
+    assert "[critical]" in result1.trace[0] or "[warning]" in result1.trace[0]
+
     cool = Reading(timestamp="t2", values={"temperature": 50, "flow_rate": 30, "pressure": 3.0})
     window.append(cool)
     result = agent.step(cool)
     assert any(a.state == "cleared" for a in result.cleared_alarms)
     assert agent.alarms.active == []
+    assert any("[cleared]" in e for e in result.trace)

@@ -38,3 +38,7 @@ class TrendChart(ctk.CTkFrame):
         pad = (high - low) * 0.1 or 1.0
         self._ax.set_ylim(low - pad, high + pad)
         self._mpl_canvas.draw_idle()
+
+    def update_label(self, label: str) -> None:
+        self._ax.set_title(label, color=theme.MUTED, fontsize=9, loc="left")
+        self._mpl_canvas.draw_idle()

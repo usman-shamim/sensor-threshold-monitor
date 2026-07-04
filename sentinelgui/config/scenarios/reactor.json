@@ -1,0 +1,37 @@
+{
+  "name": "Reactor Cooling Loop",
+  "description": "Exothermic reactor with cooling jacket — monitor coolant flow, pressure, and reactor temperature",
+  "sensors": {
+    "temperature": { "label": "Temperature", "unit": "°C" },
+    "flow_rate": { "label": "Flow Rate", "unit": "L/min" },
+    "pressure": { "label": "Pressure", "unit": "bar" }
+  },
+  "stages": ["Reservoir", "Pump", "Flow Sensor", "Pressure Sensor", "Reactor"],
+  "stage_sensor": {
+    "Flow Sensor": "flow_rate",
+    "Pressure Sensor": "pressure",
+    "Reactor": "temperature"
+  },
+  "nominal": { "temperature": 50.0, "flow_rate": 30.0, "pressure": 3.0 },
+  "fault_targets": {
+    "blockage": { "flow_rate": 8.0, "pressure": 4.9 },
+    "pump_failure": { "flow_rate": 1.0, "pressure": 1.1 },
+    "cavitation": { "pressure": 1.2 },
+    "fouling": { "temperature": 88.0, "flow_rate": 22.0 },
+    "thermal_runaway": { "temperature": 110.0 },
+    "cooling_failure": { "temperature": 95.0 }
+  },
+  "thresholds": {
+    "temperature": { "critical": { "min": 0, "max": 100 }, "warning": { "min": 10, "max": 90 } },
+    "flow_rate": { "critical": { "min": 10, "max": 50 }, "warning": { "min": 14, "max": 46 } },
+    "pressure": { "critical": { "min": 1.0, "max": 5.0 }, "warning": { "min": 1.4, "max": 4.6 } }
+  },
+  "fault_explanations": {
+    "pump_failure": "Pump failure — coolant circulation has stopped. Flow rate collapsed to near zero and discharge pressure dropped, consistent with a centrifugal pump that has lost prime, tripped, or suffered impeller damage. Without coolant flow the reactor cannot reject heat.",
+    "blockage": "Blockage detected — a physical obstruction in the cooling loop (e.g. precipitated solids, debris, or a partially closed valve) is restricting flow. Pressure builds upstream of the restriction while flow drops downstream — the classic ΔP signature of a blocked line.",
+    "cavitation": "Cavitation — vapour bubbles are forming in the pump. When the local pressure at the impeller drops below the fluid's vapour pressure, bubbles nucleate and then collapse violently against the impeller surface. This causes the characteristic pressure oscillation, noise, vibration, and progressive impeller erosion.",
+    "fouling": "Fouling — scale or deposits are accumulating on heat exchanger surfaces, reducing the overall heat transfer coefficient (U). The insulating layer forces temperature upward while flow is mildly restricted. Common in hard water or when dissolved solids precipitate out of solution at elevated temperatures.",
+    "thermal_runaway": "Thermal runaway — the reactor temperature has exceeded its critical limit. An exothermic reaction is accelerating: reaction rate increases exponentially with temperature (Arrhenius kinetics), generating heat faster than the cooling system can remove it. Immediate intervention required — consider emergency shutdown.",
+    "cooling_failure": "Cooling failure — the heat exchanger is not removing heat effectively despite adequate coolant flow. Possible causes: fouled heat exchanger surfaces reducing the overall heat transfer coefficient (U), low coolant level, or secondary cooling circuit failure. Reactor temperature is rising."
+  }
+}
