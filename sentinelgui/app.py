@@ -14,16 +14,26 @@ import datetime
 import queue
 from typing import Optional
 
+from . import fault_engine
 from .alarm_manager import AlarmManager
 from .data_logger import DataLogger
 from .models import DataSource
 from .process_engine import build_reading
 from .react_agent import ReActAgent
 from .reading_window import ReadingWindow
+from .scenario import list_scenarios, load_scenario
 from .shutdown_controller import ShutdownController
 from .thresholds import load_thresholds, zone_of
 
 DRAIN_INTERVAL_MS = 250
+
+
+def _bands_from_dict(thresholds: dict):
+    from .thresholds import ThresholdBand
+    return {sensor: ThresholdBand(
+        critical={k: float(v) for k, v in spec["critical"].items()},
+        warning={k: float(v) for k, v in spec["warning"].items()},
+    ) for sensor, spec in thresholds.items()}
 
 
 def _now_iso() -> str:
@@ -33,29 +43,43 @@ def _now_iso() -> str:
 class AppController:
     """Coordinates acquisition, processing, alarms, diagnosis, logging, and the view."""
 
-    def __init__(self, config_path: str | None = None, kiosk: bool = False):
+    def __init__(self, config_path: str | None = None, kiosk: bool = False,
+                 scenario_id: str = "reactor"):
         self.config_path = config_path
         self.kiosk = kiosk
-        self.bands = load_thresholds(config_path)
+        self._scenarios_list = list_scenarios()
+        self.scenario = load_scenario(scenario_id)  # fall through to reactor default
+        if self.scenario is None:
+            self.scenario = load_scenario("reactor")
+
+        self.bands = _bands_from_dict(self.scenario.thresholds)
         self.window = ReadingWindow(maxlen=300)
         self.alarms = AlarmManager(self.bands)
-        self.agent = ReActAgent(self.alarms, self.window, self.bands)
+        self.agent = ReActAgent(self.alarms, self.window, self.bands,
+                               stages=self.scenario.stages,
+                               stage_sensor=self.scenario.stage_sensor)
         self.logger = DataLogger(directory=".")
         self.shutdown = ShutdownController(source=None)
         self.queue: "queue.Queue" = queue.Queue()
         self.source = DataSource()
-        self._producer = None  # SerialDataAcquisition | FaultSimulator
+        self._producer = None
         self._seq = 0
         self._missed = 0
-        self._view = None  # set by attach_view
+        self._view = None
         self._root = None
         self.fault_history: list = []
+        self._trace: list = []
+
+        fault_engine.set_explanations(self.scenario.fault_explanations)
 
     # -- producer wiring -------------------------------------------------------
     def use_simulator(self):
         from .simulator import FaultSimulator
 
-        self._producer = FaultSimulator(out_queue=self.queue, tick_s=1.0)
+        nominal = getattr(self.scenario, "nominal", None)
+        targets = getattr(self.scenario, "fault_targets", None)
+        self._producer = FaultSimulator(out_queue=self.queue, tick_s=1.0,
+                                        nominal=nominal, fault_targets=targets)
         self.source = DataSource(kind="simulator", status="simulating", detail="fault simulator")
         self.shutdown.source = self._producer
         return self._producer
@@ -94,6 +118,8 @@ class AppController:
                 raw = self.queue.get_nowait()
             except queue.Empty:
                 break
+            if self.shutdown.is_latched:
+                continue  # skip processing — SHUTDOWN freezes everything
             processed_any = True
             self._seq += 1
             reading = build_reading(raw, self._seq, self.source.kind, _now_iso())
@@ -101,6 +127,8 @@ class AppController:
                 continue  # malformed/non-finite — discarded (FR-004)
             self.window.append(reading)
             result = self.agent.step(reading)
+            self._trace.extend(result.trace)
+            self._trace = self._trace[-50:]
             if self.logger.session.state == "recording":
                 self.logger.write(reading, result.new_alarms)
             for alarm in result.new_alarms:
@@ -109,10 +137,8 @@ class AppController:
                 self._view.update(self._build_state(result))
 
         self._update_connection(processed_any)
-        if self._root is not None and not self.shutdown.is_latched:
+        if self._root is not None:
             self._root.after(DRAIN_INTERVAL_MS, self._drain)
-        elif self._root is not None:
-            self._root.after(DRAIN_INTERVAL_MS, self._drain)  # keep ticking in SHUTDOWN
 
     def _update_connection(self, processed_any: bool):
         if self.source.kind != "serial":
@@ -170,6 +196,60 @@ class AppController:
             "shutdown_latched": self.shutdown.is_latched,
             "fault_history": self.fault_history,
             "malformed": getattr(self._producer, "malformed_count", 0),
+            "trace": self._trace,
+            "scenario": self.scenario,
+            "scenario_list": self._scenarios_list,
+        }
+
+    # -- scenario switching ----------------------------------------------------
+
+    def switch_scenario(self, scenario_id: str):
+        scenario = load_scenario(scenario_id)
+        if scenario is None:
+            return
+
+        self.scenario = scenario
+        self.bands = _bands_from_dict(scenario.thresholds)
+        self.window = ReadingWindow(maxlen=300)
+        self.alarms = AlarmManager(self.bands)
+        self.agent = ReActAgent(self.alarms, self.window, self.bands,
+                               stages=scenario.stages,
+                               stage_sensor=scenario.stage_sensor)
+        self._trace = []
+        self.fault_history = []
+        self._seq = 0
+
+        fault_engine.set_explanations(scenario.fault_explanations)
+
+        # Restart the data producer
+        if self._producer is not None:
+            try:
+                self._producer.stop()
+            except Exception:
+                pass
+        self.use_simulator()
+        self._producer.start()
+
+        if self._view is not None:
+            self._view.set_status(f"Switched to {scenario.name}")
+            self._view.update(self._build_state_raw())
+
+    def _build_state_raw(self):
+        return {
+            "reading": None,
+            "zones": {},
+            "active_alarms": [],
+            "diagnosis": None,
+            "stage_health": {stage: "normal" for stage in self.scenario.stages},
+            "source": self.source,
+            "window": self.window,
+            "recording": None,
+            "shutdown_latched": False,
+            "fault_history": self.fault_history,
+            "malformed": 0,
+            "trace": self._trace,
+            "scenario": self.scenario,
+            "scenario_list": self._scenarios_list,
         }
 
     def _notify_status(self, text: str):

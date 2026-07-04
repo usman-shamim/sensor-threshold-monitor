@@ -33,3 +33,7 @@ class SensorCard(ctk.CTkFrame):
     def update_value(self, value: float, zone: str) -> None:
         self._value.configure(text=f"{value:.1f} {self.unit}")
         self._status.configure(text=zone.upper(), fg_color=theme.ZONE_COLORS.get(zone, theme.MUTED))
+
+    def update_label(self, label: str, unit: str) -> None:
+        self._label.configure(text=label)
+        self.unit = unit

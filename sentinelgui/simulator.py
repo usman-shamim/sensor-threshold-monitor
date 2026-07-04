@@ -32,19 +32,23 @@ FAULT_TARGETS = {
 class FaultSimulator:
     """A no-hardware data source with on-demand fault injection."""
 
-    def __init__(self, out_queue: "queue.Queue" = None, tick_s: float = 1.0):
+    def __init__(self, out_queue: "queue.Queue" = None, tick_s: float = 1.0,
+                 nominal: dict = None, fault_targets: dict = None):
         self.out_queue = out_queue if out_queue is not None else queue.Queue()
         self.tick_s = tick_s
-        self._state = dict(NOMINAL)
+        self._nominal = dict(nominal) if nominal else dict(NOMINAL)
+        self._fault_targets = dict(fault_targets) if fault_targets else dict(FAULT_TARGETS)
+        self._state = dict(self._nominal)
         self._fault: Optional[str] = None
-        self._phase = 0  # tick counter, drives cavitation oscillation deterministically
+        self._phase = 0
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
         self._rng = random.Random(1234)
+        self.malformed_count = 0
 
     def inject(self, fault: str) -> None:
         """Begin easing readings toward *fault*'s signature."""
-        if fault not in FAULT_TARGETS:
+        if fault not in self._fault_targets:
             raise ValueError(f"Unknown fault: {fault}")
         self._fault = fault
 
@@ -57,16 +61,17 @@ class FaultSimulator:
         return self._fault
 
     def _targets(self) -> dict[str, float]:
-        targets = dict(NOMINAL)
+        targets = dict(self._nominal)
         if self._fault:
-            targets.update(FAULT_TARGETS[self._fault])
+            targets.update(self._fault_targets[self._fault])
         return targets
 
     def next_frame(self) -> dict[str, float]:
         """Advance the simulation one tick and return the current raw frame."""
         self._phase += 1
         targets = self._targets()
-        for sensor in NOMINAL:
+        for sensor in self._nominal:
+            target = targets[sensor]
             target = targets[sensor]
             # Ease 25% toward the target each tick, then add small sensor noise.
             self._state[sensor] += (target - self._state[sensor]) * 0.25

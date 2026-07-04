@@ -27,6 +27,17 @@ TEMP_WARN = 88.0
 TEMP_CRITICAL = 100.0
 TEMP_STEEP_SLOPE = 2.0
 
+_EXPLANATIONS: dict[str, str] = {}  # overridden per scenario
+
+
+def set_explanations(explanations: dict):
+    _EXPLANATIONS.clear()
+    _EXPLANATIONS.update(explanations)
+
+
+def _explain(fault: str, fallback: str) -> str:
+    return _EXPLANATIONS.get(fault, fallback)
+
 
 def slope(window: ReadingWindow, sensor: str, n: int = SLOPE_N) -> float:
     """Per-sample rate of change for *sensor* over the last *n* samples (pure helper)."""
@@ -58,10 +69,12 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if flow is not None and press is not None and flow <= FLOW_NEAR_ZERO and press <= PRESS_LOW:
         return FaultDiagnosis(
             fault="pump_failure",
-            explanation=(
-                "Flow has collapsed toward zero while pressure has also dropped, "
-                "which points to a pump that has stopped delivering."
-            ),
+            explanation=_explain("pump_failure",
+                "Pump failure — coolant circulation has stopped. Flow rate collapsed "
+                "to near zero and discharge pressure dropped, consistent with a "
+                "centrifugal pump that has lost prime, tripped, or suffered impeller "
+                "damage. Without coolant flow the reactor cannot reject heat."),
+
             confidence=_confidence(f_slope <= 0 and p_slope <= 0),
             related_sensors=["flow_rate", "pressure"],
         )
@@ -70,10 +83,11 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if flow is not None and press is not None and flow < FLOW_LOW and press > PRESS_HIGH:
         return FaultDiagnosis(
             fault="blockage",
-            explanation=(
-                "Flow is restricted while pressure builds upstream — the classic signature "
-                "of a restriction or blockage downstream of the pump."
-            ),
+            explanation=_explain("blockage",
+                "Blockage detected — a physical obstruction in the cooling loop "
+                "(e.g. precipitated solids, debris, or a partially closed valve) is "
+                "restricting flow. Pressure builds upstream of the restriction while "
+                "flow drops downstream — the classic ΔP signature of a blocked line."),
             confidence=_confidence(f_slope < 0 and p_slope > 0),
             related_sensors=["flow_rate", "pressure"],
         )
@@ -82,10 +96,12 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if press is not None and press < PRESS_LOW and p_var > PRESS_OSCILLATION_VAR:
         return FaultDiagnosis(
             fault="cavitation",
-            explanation=(
-                "Pressure is low and oscillating, consistent with cavitation (vapour "
-                "bubbles forming and collapsing in the pump)."
-            ),
+            explanation=_explain("cavitation",
+                "Cavitation — vapour bubbles are forming in the pump. When the local "
+                "pressure at the impeller drops below the fluid's vapour pressure, "
+                "bubbles nucleate and then collapse violently against the impeller "
+                "surface. This causes the characteristic pressure oscillation, noise, "
+                "vibration, and progressive impeller erosion."),
             confidence="medium",
             related_sensors=["pressure"],
         )
@@ -94,10 +110,12 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if temp is not None and temp >= TEMP_CRITICAL:
         return FaultDiagnosis(
             fault="thermal_runaway",
-            explanation=(
-                "Temperature is above its critical limit — a thermal runaway in the "
-                "reactor; consider emergency shutdown."
-            ),
+            explanation=_explain("thermal_runaway",
+                "Thermal runaway — the reactor temperature has exceeded its critical "
+                "limit. An exothermic reaction is accelerating: reaction rate increases "
+                "exponentially with temperature (Arrhenius kinetics), generating heat "
+                "faster than the cooling system can remove it. Immediate intervention "
+                "required — consider emergency shutdown."),
             confidence=_confidence(t_slope >= TEMP_STEEP_SLOPE),
             related_sensors=["temperature"],
         )
@@ -106,10 +124,12 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if temp is not None and temp > TEMP_WARN and (flow is None or flow >= FLOW_ADEQUATE):
         return FaultDiagnosis(
             fault="cooling_failure",
-            explanation=(
-                "Temperature is high even though coolant flow is adequate, which indicates "
-                "the cooling system is not removing heat effectively."
-            ),
+            explanation=_explain("cooling_failure",
+                "Cooling failure — the heat exchanger is not removing heat effectively "
+                "despite adequate coolant flow. Possible causes: fouled heat exchanger "
+                "surfaces reducing the overall heat transfer coefficient (U), low "
+                "coolant level, or secondary cooling circuit failure. Reactor "
+                "temperature is rising."),
             confidence=_confidence(t_slope > 0),
             related_sensors=["temperature", "flow_rate"],
         )
@@ -118,10 +138,12 @@ def classify(reading, window: ReadingWindow, active: Optional[list] = None) -> F
     if temp is not None and flow is not None and temp > TEMP_WARN and flow < FLOW_ADEQUATE:
         return FaultDiagnosis(
             fault="fouling",
-            explanation=(
-                "Temperature is creeping up while flow is mildly reduced — deposits/fouling "
-                "are lowering heat transfer and restricting the loop."
-            ),
+            explanation=_explain("fouling",
+                "Fouling — scale or deposits are accumulating on heat exchanger "
+                "surfaces, reducing the overall heat transfer coefficient (U). The "
+                "insulating layer forces temperature upward while flow is mildly "
+                "restricted. Common in hard water or when dissolved solids precipitate "
+                "out of solution at elevated temperatures."),
             confidence=_confidence(t_slope > 0 and f_slope < 0),
             related_sensors=["temperature", "flow_rate"],
         )

@@ -1,9 +1,10 @@
 """Module 6 — Industrial Dashboard main window.
 
 Composes the SCADA layout (sensor cards, trend charts, process mimic, alarm panel, fault
-log, diagnosis panel) and the control bar (recording, fault injection, emergency shutdown).
-It is the View: its ``update(state)`` is a pure render of the model snapshot the
-``AppController`` passes each tick; all logic lives in the headless modules.
+log, diagnosis panel, reasoning trace) and the control bar (scenario selector, recording,
+fault injection, emergency shutdown). It is the View: its ``update(state)`` is a pure render
+of the model snapshot the ``AppController`` passes each tick; all logic lives in the headless
+modules.
 """
 
 from __future__ import annotations
@@ -12,14 +13,13 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
-from ..models import SENSOR_KEYS, SENSOR_LABELS, SENSOR_UNITS
-from ..simulator import FAULT_TARGETS
 from . import theme
 from .ai_panel import AIPanel
 from .alarm_panel import AlarmPanel
 from .fault_log import FaultLog
 from .mimic_diagram import MimicDiagram
 from .sensor_card import SensorCard
+from .trace_panel import TracePanel
 from .trend_chart import TrendChart
 
 
@@ -31,13 +31,14 @@ class MainWindow:
         self.kiosk = kiosk
         ctk.set_appearance_mode("dark")
         self.root = ctk.CTk()
-        self.root.title("SentinelGUI — Reactor Cooling Loop Monitor")
+        self.root.title(f"SentinelGUI — {controller.scenario.name}")
         self.root.configure(fg_color=theme.BG)
         self._active_alarm = None
+        self._scenario_id = None
         self._build()
         controller.attach_view(self, self.root)
         if kiosk:
-            self.root.attributes("-fullscreen", True)
+            self.root.after(0, lambda: self.root.attributes("-fullscreen", True))
         else:
             sw = self.root.winfo_screenwidth()
             sh = self.root.winfo_screenheight()
@@ -52,8 +53,6 @@ class MainWindow:
         body = ctk.CTkFrame(self.root, fg_color=theme.BG)
         body.pack(fill="both", expand=True, padx=12, pady=6)
 
-        # Left column (weight 3) and right column (weight 2) in a grid so proportions
-        # hold at any window size instead of competing pack expand.
         body.grid_columnconfigure(0, weight=3)
         body.grid_columnconfigure(1, weight=2)
         body.grid_rowconfigure(0, weight=1)
@@ -62,33 +61,35 @@ class MainWindow:
         right = ctk.CTkFrame(body, fg_color=theme.BG)
         right.grid(row=0, column=1, sticky="nsew", padx=(12, 0))
 
+        sc = self.controller.scenario
         cards = ctk.CTkFrame(left, fg_color=theme.BG)
         cards.pack(fill="x")
         self._cards = {}
         self._charts = {}
-        for i, key in enumerate(SENSOR_KEYS):
-            card = SensorCard(cards, key, SENSOR_LABELS[key], SENSOR_UNITS[key], self.kiosk)
+        for i, key in enumerate(sc.sensor_keys):
+            card = SensorCard(cards, key, sc.sensor_labels[key], sc.sensor_units[key], self.kiosk)
             card.grid(row=0, column=i, padx=6, pady=6, sticky="nsew")
             cards.grid_columnconfigure(i, weight=1)
             self._cards[key] = card
 
         charts = ctk.CTkFrame(left, fg_color=theme.BG)
         charts.pack(fill="both", expand=True, pady=(6, 0))
-        for i, key in enumerate(SENSOR_KEYS):
-            chart = TrendChart(charts, key, SENSOR_LABELS[key], self.kiosk)
+        for i, key in enumerate(sc.sensor_keys):
+            chart = TrendChart(charts, key, sc.sensor_labels[key], self.kiosk)
             chart.grid(row=0, column=i, padx=6, pady=6, sticky="nsew")
             charts.grid_columnconfigure(i, weight=1)
             charts.grid_rowconfigure(0, weight=1)
             self._charts[key] = chart
 
-        self._mimic = MimicDiagram(left, self.kiosk)
+        self._mimic = MimicDiagram(left, self.kiosk, stages=sc.stages)
         self._mimic.pack(fill="x", pady=(6, 0))
 
-        # Grid the right column so alarms and log share space proportionally
-        # instead of competing via pack expand (which causes reflow as content grows).
-        right.grid_rowconfigure(0, weight=2)   # alarms
-        right.grid_rowconfigure(1, weight=0)   # ai panel — fixed height
-        right.grid_rowconfigure(2, weight=3)   # fault log
+        self._trace = TracePanel(left, self.kiosk)
+        self._trace.pack(fill="both", expand=True, pady=(6, 0))
+
+        right.grid_rowconfigure(0, weight=2)
+        right.grid_rowconfigure(1, weight=0)
+        right.grid_rowconfigure(2, weight=3)
         right.grid_columnconfigure(0, weight=1)
         self._alarms = AlarmPanel(right, self.kiosk)
         self._alarms.grid(row=0, column=0, sticky="nsew")
@@ -105,10 +106,19 @@ class MainWindow:
         bar = ctk.CTkFrame(self.root, fg_color=theme.PANEL, corner_radius=0)
         bar.pack(fill="x")
 
+        # Scenario dropdown — left side, first thing a judge reads.
+        scenarios = list(self.controller._scenarios_list)
+        scenario_names = [s["name"] for s in scenarios]
+        self._scenario_choice = ctk.CTkOptionMenu(
+            bar, values=scenario_names, command=self._on_scenario,
+            font=theme.font(12, kiosk=self.kiosk))
+        self._scenario_choice.set(self.controller.scenario.name)
+        self._scenario_choice.pack(side="left", padx=12, pady=8)
+
         self._status = ctk.CTkLabel(bar, text="Starting…", text_color=theme.MUTED,
                                     font=theme.font(12, kiosk=self.kiosk),
-                                    anchor="w", width=380)
-        self._status.pack(side="left", padx=12, pady=8)
+                                    anchor="w", width=300)
+        self._status.pack(side="left", padx=6, pady=8)
 
         estop = ctk.CTkButton(bar, text="EMERGENCY SHUTDOWN", fg_color=theme.ZONE_COLORS["critical"],
                               hover_color="#8b1a1a", command=self._on_estop,
@@ -120,14 +130,42 @@ class MainWindow:
                                          font=theme.font(12, bold=True, kiosk=self.kiosk))
         self._record_btn.pack(side="right", padx=8, pady=6)
 
-        # Fault injection (simulator only).
-        self._fault_choice = ctk.CTkOptionMenu(bar, values=["(clear)"] + list(FAULT_TARGETS),
+        # Fault injection — read targets from the active simulator.
+        producer = self.controller._producer
+        targets = list(getattr(producer, "_fault_targets", {}).keys())
+        self._fault_choice = ctk.CTkOptionMenu(bar, values=["(clear)"] + targets,
                                                command=self._on_inject,
                                                font=theme.font(12, kiosk=self.kiosk))
         self._fault_choice.set("Inject Fault")
         self._fault_choice.pack(side="right", padx=8, pady=6)
 
     # -- control callbacks ----------------------------------------------------
+    def _on_scenario(self, choice: str):
+        scenarios = self.controller._scenarios_list
+        for s in scenarios:
+            if s["name"] == choice:
+                self._scenario_id = s["id"]
+                self.controller.switch_scenario(s["id"])
+                self.root.title(f"SentinelGUI — {choice}")
+                self._rebuild_labels()
+                return
+
+    def _rebuild_labels(self):
+        sc = self.controller.scenario
+        for key, card in self._cards.items():
+            if key in sc.sensor_labels:
+                card.update_label(sc.sensor_labels[key], sc.sensor_units[key])
+        for key, chart in self._charts.items():
+            if key in sc.sensor_labels:
+                chart.update_label(sc.sensor_labels[key])
+        self._mimic._stages = tuple(sc.stages)
+        self._mimic._nodes.clear()
+        self._mimic._labels.clear()
+        self._mimic._draw()
+        # Refresh fault injection dropdown for new scenario.
+        targets = list(getattr(self.controller._producer, "_fault_targets", {}).keys())
+        self._fault_choice.configure(values=["(clear)"] + targets)
+
     def _on_record(self):
         session = self.controller.logger.session
         if session.state == "recording":
@@ -192,7 +230,6 @@ class MainWindow:
         self.controller.agent.request_ai(self._active_alarm, self._ai_done)
 
     def _ai_done(self, text):
-        # Marshal back onto the UI thread.
         self.root.after(0, lambda: self._ai.show_ai_result(text))
 
     # -- view API (called by the controller) ----------------------------------
@@ -200,23 +237,33 @@ class MainWindow:
         self._status.configure(text=text)
 
     def update(self, state: dict):
-        reading = state["reading"]
-        zones = state["zones"]
-        for key, card in self._cards.items():
-            if key in reading.values:
-                card.update_value(reading.values[key], zones.get(key, "normal"))
-            self._charts[key].update_series(state["window"].series(key))
-        self._mimic.update_health(state["stage_health"])
-        self._alarms.update_alarms(state["active_alarms"])
-        self._ai.update_diagnosis(state["diagnosis"])
-        self._log.update_history(state["fault_history"])
-        self._active_alarm = state["active_alarms"][0] if state["active_alarms"] else None
+        reading = state.get("reading")
+        zones = state.get("zones", {})
 
-        src = state["source"]
-        rec = state["recording"]
-        rec_text = f" · REC {rec.rows_written} rows" if rec.state == "recording" else ""
-        self.set_status(
-            f"{src.kind}:{src.status} · {src.detail} · malformed {state['malformed']}{rec_text}")
+        if reading is not None:
+            for key, card in self._cards.items():
+                if key in reading.values:
+                    card.update_value(reading.values[key], zones.get(key, "normal"))
+                self._charts[key].update_series(state["window"].series(key))
+
+        stage_health = state.get("stage_health", {})
+        self._mimic.update_health(stage_health)
+        self._trace.update_trace(state.get("trace", []))
+        self._alarms.update_alarms(state.get("active_alarms", []))
+        self._ai.update_diagnosis(state.get("diagnosis"))
+        self._log.update_history(state.get("fault_history", []))
+        active = state.get("active_alarms", [])
+        self._active_alarm = active[0] if active else None
+
+        src = state.get("source")
+        rec = state.get("recording")
+        if rec is not None:
+            rec_text = f" · REC {rec.rows_written} rows" if rec.state == "recording" else ""
+        else:
+            rec_text = ""
+        if src is not None:
+            self.set_status(
+                f"{src.kind}:{src.status} · {src.detail} · malformed {state.get('malformed', 0)}{rec_text}")
 
     def run(self):
         self.root.mainloop()
