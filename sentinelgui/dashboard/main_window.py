@@ -130,14 +130,39 @@ class MainWindow:
                                          font=theme.font(12, bold=True, kiosk=self.kiosk))
         self._record_btn.pack(side="right", padx=8, pady=6)
 
-        # Fault injection — read targets from the active simulator.
+        self._build_fault_bar()
+
+    def _build_fault_bar(self):
+        bar = ctk.CTkFrame(self.root, fg_color=theme.PANEL_LIGHT, corner_radius=0, height=36)
+        bar.pack(fill="x")
+        label = ctk.CTkLabel(bar, text="Fault Injection:", text_color=theme.MUTED,
+                             font=theme.font(11, bold=True, kiosk=self.kiosk))
+        label.pack(side="left", padx=12, pady=4)
+
         producer = self.controller._producer
         targets = list(getattr(producer, "_fault_targets", {}).keys())
-        self._fault_choice = ctk.CTkOptionMenu(bar, values=["(clear)"] + targets,
-                                               command=self._on_inject,
-                                               font=theme.font(12, kiosk=self.kiosk))
-        self._fault_choice.set("Inject Fault")
-        self._fault_choice.pack(side="right", padx=8, pady=6)
+        fault_colors = {
+            "blockage": "#b71c1c", "pump_failure": "#e65100",
+            "cavitation": "#5d4037", "fouling": "#827717",
+            "thermal_runaway": "#880e4f", "cooling_failure": "#0d47a1",
+        }
+        self._fault_btns = {}
+        for name in targets:
+            color = fault_colors.get(name, theme.ACCENT)
+            btext = name.replace("_", " ").title()
+            btn = ctk.CTkButton(bar, text=btext, width=110, height=26,
+                                fg_color=color, hover_color=theme.PANEL_LIGHT,
+                                font=theme.font(10, bold=True, kiosk=self.kiosk),
+                                command=lambda n=name: self._on_inject(n))
+            btn.pack(side="left", padx=3, pady=4)
+            self._fault_btns[name] = btn
+
+        clear_btn = ctk.CTkButton(bar, text="Clear Fault", width=80, height=26,
+                                  fg_color="transparent", border_width=1,
+                                  border_color=theme.MUTED,
+                                  font=theme.font(10, kiosk=self.kiosk),
+                                  command=lambda: self._on_inject(None))
+        clear_btn.pack(side="left", padx=8, pady=4)
 
     # -- control callbacks ----------------------------------------------------
     def _on_scenario(self, choice: str):
@@ -162,9 +187,6 @@ class MainWindow:
         self._mimic._nodes.clear()
         self._mimic._labels.clear()
         self._mimic._draw()
-        # Refresh fault injection dropdown for new scenario.
-        targets = list(getattr(self.controller._producer, "_fault_targets", {}).keys())
-        self._fault_choice.configure(values=["(clear)"] + targets)
 
     def _on_record(self):
         session = self.controller.logger.session
@@ -181,22 +203,22 @@ class MainWindow:
                 self._record_btn.configure(text="Stop Recording")
                 self.set_status(f"Recording to {new.path}")
 
-    def _on_inject(self, choice: str):
+    def _on_inject(self, fault: str | None):
         producer = self.controller._producer
+        if fault is None:
+            clear = getattr(producer, "clear_fault", None)
+            if callable(clear):
+                clear()
+                self.set_status("Fault cleared.")
+            return
         inject = getattr(producer, "inject", None)
-        clear = getattr(producer, "clear_fault", None)
-        if choice == "(clear)" and callable(clear):
-            clear()
-            self.set_status("Fault cleared.")
-        elif callable(inject):
+        if callable(inject):
             try:
-                inject(choice)
-                self.set_status(f"Injected fault: {choice}")
+                inject(fault)
+                label = fault.replace("_", " ").title()
+                self.set_status(f"Injected fault: {label}")
             except ValueError as exc:
                 self.set_status(str(exc))
-        else:
-            self.set_status("Fault injection is available in simulator mode only.")
-        self._fault_choice.set("Inject Fault")
 
     def _on_estop(self):
         event = self.controller.shutdown.trigger()
@@ -208,6 +230,7 @@ class MainWindow:
         if self.controller.logger.session.state == "recording":
             self.controller.logger.stop()
             self._record_btn.configure(text="Start Recording")
+        self.controller._generate_report()
         self._show_shutdown(event)
 
     def _show_shutdown(self, event):

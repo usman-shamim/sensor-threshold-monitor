@@ -69,6 +69,7 @@ class AppController:
         self._root = None
         self.fault_history: list = []
         self._trace: list = []
+        self.started_at: str | None = None
 
         fault_engine.set_explanations(self.scenario.fault_explanations)
 
@@ -98,6 +99,7 @@ class AppController:
         self._root = root
 
     def start(self):
+        self.started_at = _now_iso()
         try:
             self._producer.start()
             if self.source.kind == "serial":
@@ -257,8 +259,20 @@ class AppController:
             self._view.set_status(text)
 
     def stop(self):
+        self._generate_report()
         if self._producer is not None:
             try:
                 self._producer.stop()
             except Exception:
                 pass
+
+    def _generate_report(self):
+        from .report import generate
+        path = generate(
+            scenario_name=self.scenario.name,
+            started_at=self.started_at,
+            seq=self._seq,
+            fault_history=self.fault_history,
+        )
+        if path:
+            self._notify_status(f"Report saved: {path}")
