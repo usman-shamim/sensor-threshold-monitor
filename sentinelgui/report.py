@@ -16,8 +16,16 @@ def _now() -> str:
 
 
 def _s(text: str) -> str:
-    """ASCII-safe string for built-in Helvetica font."""
-    return text.replace("\u2014", "-").replace("\u2013", "-").replace("\u00b0", " deg ")
+    """Strip Unicode to safe ASCII for the built-in Helvetica font."""
+    text = str(text)
+    text = text.replace("\u2014", "-")   # em-dash
+    text = text.replace("\u2013", "-")   # en-dash
+    text = text.replace("\u00b0", " deg ")   # degree
+    text = text.replace("\u0394", "dP")     # Greek Delta (Delta-P)
+    text = text.replace("\u00d7", "x")      # multiplication sign
+    for i in range(10):
+        text = text.replace(chr(0x2080 + i), str(i))  # subscript 0-9
+    return text.encode("ascii", errors="replace").decode("ascii")
 
 
 def generate(scenario_name: str, started_at: str | None, seq: int,
