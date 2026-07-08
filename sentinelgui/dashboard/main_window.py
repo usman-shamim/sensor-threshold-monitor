@@ -98,10 +98,6 @@ class MainWindow:
         self._log = FaultLog(right, self.kiosk)
         self._log.grid(row=2, column=0, sticky="nsew", pady=(8, 0))
 
-        self._shutdown_banner = ctk.CTkLabel(
-            self.root, text="", fg_color=theme.SHUTDOWN_BG, text_color="#ffffff",
-            font=theme.font(20, bold=True, kiosk=self.kiosk))
-
     def _build_topbar(self):
         bar = ctk.CTkFrame(self.root, fg_color=theme.PANEL, corner_radius=0)
         bar.pack(fill="x")
@@ -235,14 +231,11 @@ class MainWindow:
 
         self._estop_btn.configure(text="RESUME", fg_color="#2e7d32", hover_color="#1b5e20",
                                   command=self._confirm_resume)
-        self._shutdown_banner.configure(
-            text=f"SHUTDOWN - hardware {event.hardware_outcome}. Press RESUME to restart.")
-        self._shutdown_banner.pack(fill="x", side="bottom")
+        self.set_status(f"SHUTDOWN - hardware {event.hardware_outcome}. Press RESUME to restart.")
 
     def _confirm_resume(self):
         if messagebox.askyesno("Resume", "Resume monitoring from SHUTDOWN safe state?"):
             self.controller.shutdown.resume()
-            self._shutdown_banner.pack_forget()
             self._estop_btn.configure(text="EMERGENCY SHUTDOWN",
                                       fg_color=theme.ZONE_COLORS["critical"],
                                       hover_color="#8b1a1a",
