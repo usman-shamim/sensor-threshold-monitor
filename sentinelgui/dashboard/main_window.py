@@ -123,6 +123,7 @@ class MainWindow:
         estop = ctk.CTkButton(bar, text="EMERGENCY SHUTDOWN", fg_color=theme.ZONE_COLORS["critical"],
                               hover_color="#8b1a1a", command=self._on_estop,
                               font=theme.font(13, bold=True, kiosk=self.kiosk))
+        self._estop_btn = estop
         estop.pack(side="right", padx=8, pady=6)
 
         self._record_btn = ctk.CTkButton(bar, text="Start Recording", command=self._on_record,
@@ -224,26 +225,28 @@ class MainWindow:
         event = self.controller.shutdown.trigger()
         from ..models import FaultHistoryEntry
         self.controller.fault_history.append(FaultHistoryEntry(
-            timestamp=event.timestamp, sensor="—", value=0.0, severity="critical",
+            timestamp=event.timestamp, sensor="-", value=0.0, severity="critical",
             fault="emergency_shutdown", explanation=f"hardware: {event.hardware_outcome}",
             source="operator"))
         if self.controller.logger.session.state == "recording":
             self.controller.logger.stop()
             self._record_btn.configure(text="Start Recording")
         self.controller._generate_report()
-        self._show_shutdown(event)
 
-    def _show_shutdown(self, event):
-        msg = (f"SHUTDOWN — hardware {event.hardware_outcome}. "
-               f"Click to confirm and resume monitoring.")
-        self._shutdown_banner.configure(text=msg)
+        self._estop_btn.configure(text="RESUME", fg_color="#2e7d32", hover_color="#1b5e20",
+                                  command=self._confirm_resume)
+        self._shutdown_banner.configure(
+            text=f"SHUTDOWN - hardware {event.hardware_outcome}. Press RESUME to restart.")
         self._shutdown_banner.pack(fill="x", side="bottom")
-        self._shutdown_banner.bind("<Button-1>", lambda e: self._confirm_resume())
 
     def _confirm_resume(self):
         if messagebox.askyesno("Resume", "Resume monitoring from SHUTDOWN safe state?"):
             self.controller.shutdown.resume()
             self._shutdown_banner.pack_forget()
+            self._estop_btn.configure(text="EMERGENCY SHUTDOWN",
+                                      fg_color=theme.ZONE_COLORS["critical"],
+                                      hover_color="#8b1a1a",
+                                      command=self._on_estop)
             self.set_status("Resumed monitoring.")
 
     def _on_explain_ai(self):

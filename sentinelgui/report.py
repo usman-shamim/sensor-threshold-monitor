@@ -107,15 +107,14 @@ def generate(scenario_name: str, started_at: str | None, seq: int,
     pdf.set_text_color(0, 0, 0)
 
     for entry in fault_history:
-        ts = entry.timestamp[:19] if entry.timestamp else "—"
+        ts = _s(entry.timestamp[:19]) if entry.timestamp else "-"
         sev = entry.severity.upper() if entry.severity != "critical" else "CRIT"
-        sensor = entry.sensor[:20] if entry.sensor else "—"
+        sensor = _s(entry.sensor[:20]) if entry.sensor else "-"
         detail = _s(entry.explanation[:70]) if entry.explanation else entry.fault
-
-        pdf.cell(col_time, 5, ts)
+        pdf.cell(col_time, 5, _s(ts))
         pdf.cell(col_sev, 5, sev)
-        pdf.cell(col_sensor, 5, sensor)
-        pdf.cell(col_detail, 5, detail, ln=True)
+        pdf.cell(col_sensor, 5, _s(sensor))
+        pdf.cell(col_detail, 5, _s(detail), ln=True)
 
     # Footer
     pdf.ln(6)
