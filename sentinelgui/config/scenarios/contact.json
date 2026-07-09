@@ -1,0 +1,37 @@
+{
+  "name": "Contact Process",
+  "description": "Sulfuric acid contact process — monitor converter bed temperature, SO2 feed rate, and column pressure drop for catalyst and cooling faults",
+  "sensors": {
+    "temperature": { "label": "Converter Bed Temp", "unit": "\u00b0C" },
+    "flow_rate": { "label": "SO2 Feed Rate", "unit": "L/min" },
+    "pressure": { "label": "Column \u0394P", "unit": "bar" }
+  },
+  "stages": ["Sulfur Burner", "Blower", "Flow Sensor", "\u0394P Sensor", "Converter"],
+  "stage_sensor": {
+    "Flow Sensor": "flow_rate",
+    "\u0394P Sensor": "pressure",
+    "Converter": "temperature"
+  },
+  "nominal": { "temperature": 430.0, "flow_rate": 25.0, "pressure": 1.8 },
+  "fault_targets": {
+    "blockage": { "flow_rate": 5.0, "pressure": 4.5 },
+    "pump_failure": { "flow_rate": 0.5, "pressure": 0.3 },
+    "cavitation": { "pressure": 0.4 },
+    "fouling": { "temperature": 480.0, "flow_rate": 20.0 },
+    "thermal_runaway": { "temperature": 600.0 },
+    "cooling_failure": { "temperature": 500.0 }
+  },
+  "thresholds": {
+    "temperature": { "critical": { "min": 350, "max": 550 }, "warning": { "min": 370, "max": 520 } },
+    "flow_rate": { "critical": { "min": 2, "max": 40 }, "warning": { "min": 5, "max": 35 } },
+    "pressure": { "critical": { "min": 0.2, "max": 3.5 }, "warning": { "min": 0.5, "max": 3.0 } }
+  },
+  "fault_explanations": {
+    "pump_failure": "Air blower failure — the SO2/air feed blower has stopped. Feed rate collapsed to near zero and column pressure equalised to atmospheric. Without gas flow through the converter, the catalytic oxidation of SO2 to SO3 ceases immediately. Production is halted until the blower is restored.",
+    "blockage": "Catalyst bed plugging — dust, combustion ash, or sintered catalyst particles are blocking gas flow through the packed bed. Pressure drop across the bed has increased sharply while flow drops, following the Ergun equation for packed-bed resistance. If uncorrected, the bed may require replacement and production will be lost.",
+    "cavitation": "Acid pump cavitation — pressure at the absorption tower pump suction has dropped below the vapour pressure of the circulating sulfuric acid. Vapour bubbles form at the impeller and collapse violently, causing pressure oscillation, mechanical vibration, and progressive impeller erosion. Check the acid circulation loop for restrictions.",
+    "fouling": "Catalyst fouling — the V2O5 catalyst is being poisoned by impurities in the feed gas (arsenic compounds, dust, or volatilised catalyst components). Catalyst activity is declining, so converter temperature is rising as the plant compensates while flow drops mildly from incipient bed restriction. Reduced conversion efficiency and SO2 slip will result.",
+    "thermal_runaway": "Converter thermal runaway — the converter bed temperature has exceeded its critical limit. The oxidation of SO2 to SO3 is exothermic (dH = -99 kJ/mol); the reaction rate accelerates exponentially with temperature per Arrhenius kinetics (k = A exp(-Ea/RT)). This positive feedback loop can rapidly exceed 600 degC, permanently destroying the V2O5 catalyst through sintering. Immediate emergency shutdown is recommended.",
+    "cooling_failure": "Inter-bed cooling failure — the shell-and-tube heat exchangers between catalyst beds are not removing heat effectively despite adequate gas flow. The partially reacted gas is entering each subsequent bed too hot, progressively raising the entire temperature profile. Equilibrium conversion is falling and the catalyst beds are at risk of thermal damage."
+  }
+}

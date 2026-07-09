@@ -120,11 +120,15 @@ class ReActAgent:
             stage = self._stage_sensor.get(alarm.sensor)
             if stage and _RANK[alarm.severity] > _RANK[health[stage]]:
                 health[stage] = alarm.severity
-        # Attribute pump-type faults to the Pump stage as well.
+        # Attribute pump-type faults to the pump/blower/reboiler stage dynamically.
         if diagnosis and diagnosis.fault in _PUMP_FAULTS and self.alarms.active:
-            worst = max((a.severity for a in self.alarms.active), key=lambda s: _RANK[s])
-            if _RANK[worst] > _RANK[health["Pump"]]:
-                health["Pump"] = worst
+            ps = next((s for s in self._stages
+                       if any(c in s.lower() for c in ("pump", "blower", "compressor", "reboiler"))),
+                      None)
+            if ps:
+                worst = max((a.severity for a in self.alarms.active), key=lambda s: _RANK[s])
+                if _RANK[worst] > _RANK[health[ps]]:
+                    health[ps] = worst
         return health
 
     def request_ai(self, alarm, on_done: Callable[[Optional[str]], None], client=None) -> None:

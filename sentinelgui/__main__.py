@@ -26,6 +26,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", help="Path to a gui_config.json (defaults to the bundled one).")
     parser.add_argument("--kiosk", action="store_true",
                         help="Exhibition mode: fullscreen, enlarged fonts, confirmation guards.")
+    parser.add_argument("--scenario", "-s", default="reactor",
+                        help="Initial scenario ID (reactor, distillation, boiler, contact). Default: reactor.")
     return parser
 
 
@@ -46,7 +48,8 @@ def main(argv=None) -> int:
         )
 
     try:
-        controller = AppController(config_path=args.config, kiosk=args.kiosk)
+        controller = AppController(config_path=args.config, kiosk=args.kiosk,
+                                     scenario_id=args.scenario)
     except (FileNotFoundError, ValueError) as exc:
         sys.exit(f"Error: {exc}")
 
