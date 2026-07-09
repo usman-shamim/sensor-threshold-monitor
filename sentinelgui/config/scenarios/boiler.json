@@ -15,7 +15,7 @@
   "nominal": { "temperature": 180.0, "flow_rate": 20.0, "pressure": 10.0 },
   "fault_targets": {
     "blockage": { "flow_rate": 3.0, "pressure": 15.0 },
-    "pump_failure": { "flow_rate": 0.5, "pressure": 14.0 },
+    "pump_failure": { "flow_rate": 0.5, "pressure": 1.0 },
     "cavitation": { "pressure": 6.0 },
     "fouling": { "temperature": 230.0, "flow_rate": 16.0 },
     "thermal_runaway": { "temperature": 260.0 },
@@ -25,6 +25,17 @@
     "temperature": { "critical": { "min": 100, "max": 250 }, "warning": { "min": 120, "max": 230 } },
     "flow_rate": { "critical": { "min": 2, "max": 35 }, "warning": { "min": 5, "max": 30 } },
     "pressure": { "critical": { "min": 2.0, "max": 14.0 }, "warning": { "min": 4.0, "max": 12.0 } }
+  },
+  "fault_tuning": {
+    "temp_warn": 225.0,
+    "temp_critical": 250.0,
+    "temp_steep_slope": 4.0,
+    "flow_low": 8.0,
+    "flow_adequate": 15.0,
+    "flow_near_zero": 2.0,
+    "press_high": 13.0,
+    "press_low": 8.0,
+    "press_oscillation_var": 0.15
   },
   "fault_explanations": {
     "pump_failure": "Feed water pump failure — water supply to the boiler has stopped. Steam pressure is dropping as the drum level falls. If not corrected immediately the tubes will overheat and risk a tube rupture. The low-water cutoff should activate automatically.",

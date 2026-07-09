@@ -26,6 +26,17 @@
     "flow_rate": { "critical": { "min": 5, "max": 40 }, "warning": { "min": 8, "max": 35 } },
     "pressure": { "critical": { "min": 0.2, "max": 3.0 }, "warning": { "min": 0.5, "max": 2.5 } }
   },
+  "fault_tuning": {
+    "temp_warn": 100.0,
+    "temp_critical": 125.0,
+    "temp_steep_slope": 3.0,
+    "flow_low": 12.0,
+    "flow_adequate": 18.0,
+    "flow_near_zero": 3.0,
+    "press_high": 3.0,
+    "press_low": 0.8,
+    "press_oscillation_var": 0.15
+  },
   "fault_explanations": {
     "pump_failure": "Pump failure — feed flow has stopped. The reboiler circulation pump may have tripped or lost prime. Without feed the column runs dry and separation stops completely.",
     "blockage": "Flooding detected — liquid is backing up in the column. Excessive liquid holdup on trays restricts vapour flow, causing a sharp pressure drop (ΔP) increase across the column while feed rate drops. May be caused by fouled trays, excessive reflux, or downcomer blockage.",
