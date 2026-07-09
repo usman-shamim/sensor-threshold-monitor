@@ -8,6 +8,8 @@
   },
   "stages": ["Sulfur Burner", "Blower", "Flow Sensor", "\u0394P Sensor", "Converter"],
   "stage_sensor": {
+    "Sulfur Burner": "temperature",
+    "Blower": "flow_rate",
     "Flow Sensor": "flow_rate",
     "\u0394P Sensor": "pressure",
     "Converter": "temperature"
