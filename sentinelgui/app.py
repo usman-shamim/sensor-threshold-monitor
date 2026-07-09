@@ -72,6 +72,10 @@ class AppController:
         self.started_at: str | None = None
 
         fault_engine.set_explanations(self.scenario.fault_explanations)
+        if self.scenario.fault_tuning:
+            fault_engine.set_tuning(self.scenario.fault_tuning)
+        else:
+            fault_engine.reset_tuning()
 
     # -- producer wiring -------------------------------------------------------
     def use_simulator(self):
@@ -222,6 +226,10 @@ class AppController:
         self._seq = 0
 
         fault_engine.set_explanations(scenario.fault_explanations)
+        if scenario.fault_tuning:
+            fault_engine.set_tuning(scenario.fault_tuning)
+        else:
+            fault_engine.reset_tuning()
 
         # Restart the data producer
         if self._producer is not None:

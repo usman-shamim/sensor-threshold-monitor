@@ -14,17 +14,28 @@
   },
   "nominal": { "temperature": 430.0, "flow_rate": 25.0, "pressure": 1.8 },
   "fault_targets": {
-    "blockage": { "flow_rate": 5.0, "pressure": 4.5 },
-    "pump_failure": { "flow_rate": 0.5, "pressure": 0.3 },
-    "cavitation": { "pressure": 0.4 },
-    "fouling": { "temperature": 480.0, "flow_rate": 20.0 },
-    "thermal_runaway": { "temperature": 600.0 },
-    "cooling_failure": { "temperature": 500.0 }
+    "blockage": { "flow_rate": 1.0, "pressure": 4.5 },
+    "pump_failure": { "flow_rate": 0.3, "pressure": 0.1 },
+    "cavitation": { "pressure": 0.1 },
+    "fouling": { "temperature": 560.0, "flow_rate": 17.0 },
+    "thermal_runaway": { "temperature": 620.0 },
+    "cooling_failure": { "temperature": 560.0 }
   },
   "thresholds": {
     "temperature": { "critical": { "min": 350, "max": 550 }, "warning": { "min": 370, "max": 520 } },
-    "flow_rate": { "critical": { "min": 2, "max": 40 }, "warning": { "min": 5, "max": 35 } },
-    "pressure": { "critical": { "min": 0.2, "max": 3.5 }, "warning": { "min": 0.5, "max": 3.0 } }
+    "flow_rate": { "critical": { "min": 3, "max": 38 }, "warning": { "min": 6, "max": 33 } },
+    "pressure": { "critical": { "min": 0.3, "max": 3.2 }, "warning": { "min": 0.6, "max": 2.8 } }
+  },
+  "fault_tuning": {
+    "temp_warn": 470.0,
+    "temp_critical": 580.0,
+    "temp_steep_slope": 4.0,
+    "flow_low": 10.0,
+    "flow_adequate": 18.0,
+    "flow_near_zero": 2.0,
+    "press_high": 2.5,
+    "press_low": 1.0,
+    "press_oscillation_var": 0.15
   },
   "fault_explanations": {
     "pump_failure": "Air blower failure — the SO2/air feed blower has stopped. Feed rate collapsed to near zero and column pressure equalised to atmospheric. Without gas flow through the converter, the catalytic oxidation of SO2 to SO3 ceases immediately. Production is halted until the blower is restored.",

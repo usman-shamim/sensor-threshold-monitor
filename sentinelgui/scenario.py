@@ -29,6 +29,7 @@ class Scenario:
         self.fault_targets: dict = data.get("fault_targets", {})
         self.thresholds: dict = data.get("thresholds", {})
         self.fault_explanations: dict[str, str] = data.get("fault_explanations", {})
+        self.fault_tuning: dict = data.get("fault_tuning", {})
 
 
 def list_scenarios(directory: str | Path = DEFAULT_DIR) -> list[dict]:

@@ -28,11 +28,48 @@ TEMP_CRITICAL = 100.0
 TEMP_STEEP_SLOPE = 2.0
 
 _EXPLANATIONS: dict[str, str] = {}  # overridden per scenario
+_TUNE: dict[str, float] = {}  # overridden per scenario
 
 
 def set_explanations(explanations: dict):
     _EXPLANATIONS.clear()
     _EXPLANATIONS.update(explanations)
+
+
+def reset_tuning():
+    _TUNE.clear()
+    global FLOW_LOW; FLOW_LOW = 20.0
+    global FLOW_ADEQUATE; FLOW_ADEQUATE = 26.0
+    global FLOW_NEAR_ZERO; FLOW_NEAR_ZERO = 6.0
+    global PRESS_HIGH; PRESS_HIGH = 4.2
+    global PRESS_LOW; PRESS_LOW = 2.0
+    global PRESS_OSCILLATION_VAR; PRESS_OSCILLATION_VAR = 0.15
+    global TEMP_WARN; TEMP_WARN = 88.0
+    global TEMP_CRITICAL; TEMP_CRITICAL = 100.0
+    global TEMP_STEEP_SLOPE; TEMP_STEEP_SLOPE = 2.0
+
+
+def set_tuning(params: dict):
+    _TUNE.clear()
+    _TUNE.update(params)
+    if "flow_low" in _TUNE:
+        global FLOW_LOW; FLOW_LOW = _TUNE["flow_low"]
+    if "flow_adequate" in _TUNE:
+        global FLOW_ADEQUATE; FLOW_ADEQUATE = _TUNE["flow_adequate"]
+    if "flow_near_zero" in _TUNE:
+        global FLOW_NEAR_ZERO; FLOW_NEAR_ZERO = _TUNE["flow_near_zero"]
+    if "press_high" in _TUNE:
+        global PRESS_HIGH; PRESS_HIGH = _TUNE["press_high"]
+    if "press_low" in _TUNE:
+        global PRESS_LOW; PRESS_LOW = _TUNE["press_low"]
+    if "press_oscillation_var" in _TUNE:
+        global PRESS_OSCILLATION_VAR; PRESS_OSCILLATION_VAR = _TUNE["press_oscillation_var"]
+    if "temp_warn" in _TUNE:
+        global TEMP_WARN; TEMP_WARN = _TUNE["temp_warn"]
+    if "temp_critical" in _TUNE:
+        global TEMP_CRITICAL; TEMP_CRITICAL = _TUNE["temp_critical"]
+    if "temp_steep_slope" in _TUNE:
+        global TEMP_STEEP_SLOPE; TEMP_STEEP_SLOPE = _TUNE["temp_steep_slope"]
 
 
 def _explain(fault: str, fallback: str) -> str:
