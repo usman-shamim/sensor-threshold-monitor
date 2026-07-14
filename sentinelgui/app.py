@@ -264,7 +264,10 @@ class AppController:
 
     def _notify_status(self, text: str):
         if self._view is not None and hasattr(self._view, "set_status"):
-            self._view.set_status(text)
+            try:
+                self._view.set_status(text)
+            except Exception:
+                pass
 
     def stop(self):
         self._generate_report()

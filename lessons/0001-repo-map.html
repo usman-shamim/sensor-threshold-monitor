@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lesson 1 — The Repo Map</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>Lesson 1: The Repo Map</h1>
+<div class="meta">
+  <span>📁 SentinelGUI codebase</span>
+  <span>⏱ ~10 min</span>
+  <span>🎯 See the whole picture before any detail</span>
+</div>
+
+<p>
+  You generated a real working codebase. Before diving into any single file, you
+  need a mental map — where things live, what each piece is responsible for, and
+  how data flows from the Arduino to your screen. That's this lesson.
+</p>
+
+<h2>Two projects, one repo</h2>
+
+<p>Your repo contains <strong>two separate tools</strong> that cooperate:</p>
+
+<div class="diagram">
+  <pre style="text-align:left; border:none; background:none; color:#8891a8">
+  sensor-threshold-monitor/
+  │
+  ├── project.py          ← SentinelCLI  (CS50P project — DO NOT MODIFY)
+  ├── test_project.py     ← SentinelCLI tests
+  ├── config.json         ← SentinelCLI thresholds
+  │
+  └── sentinelgui/        ← SentinelGUI  (everything you're learning)
+      ├── __main__.py       entry point  →  python -m sentinelgui
+      ├── app.py            controller
+      ├── models.py         data shapes
+      ├── ...               (9 more logic modules)
+      └── dashboard/        all GUI widgets
+  </pre>
+</div>
+
+<div class="callout warn">
+  <strong>Golden rule:</strong> SentinelGUI <em>imports</em> <code>project.py</code>
+  for its threshold logic. It never modifies it. The CLI and the GUI are
+  independent — each works without the other.
+</div>
+
+<h2>The 12 modules — one job each</h2>
+
+<p>
+  Inside <span class="file-ref">sentinelgui/</span> there are 12 headless (no GUI)
+  logic modules and 8 dashboard widgets. Each module has <strong>exactly one job</strong>.
+  This is the most important design principle in the whole codebase.
+</p>
+
+<table style="width:100%; border-collapse:collapse; font-size:.9rem; margin:1rem 0">
+  <thead>
+    <tr style="border-bottom:2px solid var(--border); color:var(--accent)">
+      <th style="text-align:left; padding:.5rem .8rem">File</th>
+      <th style="text-align:left; padding:.5rem .8rem">One job</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>models.py</code></td>
+      <td style="padding:.5rem .8rem">Define data shapes — <code>Reading</code>, <code>Alarm</code>, <code>FaultDiagnosis</code></td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>reading_window.py</code></td>
+      <td style="padding:.5rem .8rem">Keep the last 300 readings in memory; compute slopes</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>acquisition.py</code></td>
+      <td style="padding:.5rem .8rem">Read serial frames from the Arduino on a background thread</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>simulator.py</code></td>
+      <td style="padding:.5rem .8rem">Fake the Arduino when no hardware is connected</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>process_engine.py</code></td>
+      <td style="padding:.5rem .8rem">Convert raw numbers into engineering units (°C, bar, L/min)</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>thresholds.py</code></td>
+      <td style="padding:.5rem .8rem">Decide if a reading is normal / warning / critical</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>alarm_manager.py</code></td>
+      <td style="padding:.5rem .8rem">Raise and clear alarms; keep alarm history</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>fault_engine.py</code></td>
+      <td style="padding:.5rem .8rem">Name the fault — blockage? pump failure? cavitation?</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>react_agent.py</code></td>
+      <td style="padding:.5rem .8rem">Observe → Reason → Act loop that ties everything together</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>sentinelcli_bridge.py</code></td>
+      <td style="padding:.5rem .8rem">Call the Gemini AI for richer explanations (optional)</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>data_logger.py</code></td>
+      <td style="padding:.5rem .8rem">Write readings to a CSV file</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.5rem .8rem"><code>shutdown_controller.py</code></td>
+      <td style="padding:.5rem .8rem">Trigger emergency shutdown and latch the safe state</td>
+    </tr>
+    <tr>
+      <td style="padding:.5rem .8rem"><code>app.py</code></td>
+      <td style="padding:.5rem .8rem">The conductor — owns the queue, drives all the above each tick</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>How data flows — one reading's journey</h2>
+
+<p>Every second, one sensor reading travels through the entire system:</p>
+
+<div class="diagram">
+<pre style="text-align:left; background:none; border:none; color:var(--text); font-size:.85rem">
+Arduino (or Simulator)
+        │   "72.4,34.1,3.2\n"       raw CSV text over USB
+        ▼
+  acquisition.py  ──────────────────  parse_frame()  →  raw tuple
+        │
+        ▼
+  queue.Queue  ◄──────────────────── background thread pushes here
+        │
+        ▼
+  app.py  drain()  ◄──────────────── Tk calls this every 250 ms
+        │
+        ├──▶  process_engine.py  →  Reading(temp=72.4, flow=34.1, pressure=3.2)
+        │
+        ├──▶  thresholds.py      →  zones = {temp:"normal", flow:"warning", pressure:"normal"}
+        │
+        ├──▶  reading_window.py  →  add to rolling buffer (last 300 readings)
+        │
+        ├──▶  react_agent.step() →  AlarmManager + fault_engine + diagnosis
+        │
+        └──▶  MainWindow.update()  →  renders cards, charts, mimic, alarms, diagnosis
+</pre>
+</div>
+
+<h2>Why is this good design?</h2>
+
+<p>
+  Each module can be tested in isolation — you can import <code>fault_engine.py</code>
+  and feed it fake readings without opening a window or connecting hardware.
+  That's why <code>pytest sentinelgui/tests/</code> runs in under 1 second with no USB cable.
+</p>
+<p>
+  It also means you can swap pieces. Want a different fault classifier? Replace
+  <code>fault_engine.py</code>. Want to log to a database instead of CSV?
+  Replace <code>data_logger.py</code>. Nothing else needs to change.
+</p>
+
+<div class="callout ok">
+  <strong>Key idea:</strong> Separate <em>what you know</em> (logic modules) from
+  <em>what you show</em> (dashboard widgets). Logic modules import nothing from
+  <code>dashboard/</code>. Widgets only render — they contain zero business logic.
+</div>
+
+<h2>Quick check — test yourself</h2>
+
+<div class="quiz">
+  <h3>Quiz</h3>
+
+  <div class="quiz-question">
+    <p>1. A new sensor reading arrives from the Arduino. Which file receives it first?</p>
+    <button class="option" data-correct="false" data-explain="app.py orchestrates but doesn't read from the port directly.">app.py</button>
+    <button class="option" data-correct="true"  data-explain="acquisition.py runs a background thread that reads from the serial port and pushes frames onto the queue.">acquisition.py</button>
+    <button class="option" data-correct="false" data-explain="process_engine.py converts raw values but only after acquisition has already received the frame.">process_engine.py</button>
+    <button class="option" data-correct="false" data-explain="thresholds.py evaluates zones but receives an already-parsed Reading, not raw serial text.">thresholds.py</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz-question">
+    <p>2. You want to add a new rule to detect a new fault type. Which file do you edit?</p>
+    <button class="option" data-correct="false" data-explain="alarm_manager.py raises alarms based on threshold zones, not fault names.">alarm_manager.py</button>
+    <button class="option" data-correct="false" data-explain="react_agent.py orchestrates the observe-reason-act loop but delegates classification.">react_agent.py</button>
+    <button class="option" data-correct="true"  data-explain="fault_engine.py contains the classify() function with all six fault signatures.">fault_engine.py</button>
+    <button class="option" data-correct="false" data-explain="thresholds.py decides normal/warning/critical zones, not fault names.">thresholds.py</button>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="quiz-question">
+    <p>3. Why can pytest run the full test suite with no Arduino connected?</p>
+    <button class="option" data-correct="false" data-explain="Tests do mock some things, but the deeper reason is about how modules are structured.">Because tests mock every module</button>
+    <button class="option" data-correct="true"  data-explain="Logic modules (fault_engine, thresholds, alarm_manager etc.) have no GUI or hardware imports at the top level. They are pure Python functions that can be called with fake data.">Logic modules have no hardware or GUI imports — they accept plain Python objects</button>
+    <button class="option" data-correct="false" data-explain="simulator.py is a runtime fallback, not how tests work.">Because simulator.py replaces the Arduino</button>
+    <button class="option" data-correct="false" data-explain="Tkinter is never imported in the headless modules.">Because Tkinter works without a display</button>
+    <div class="feedback"></div>
+  </div>
+</div>
+
+<h2>Your next step</h2>
+<p>
+  Open <span class="file-ref">sentinelgui/app.py</span> and find the <code>drain()</code>
+  method. Notice that it calls <code>root.after(250, self.drain)</code> at the end —
+  that's what reschedules itself every 250 ms. Lesson 2 will explain exactly how
+  this keeps the UI alive without freezing.
+</p>
+
+<p style="font-size:.85rem; color:var(--muted)">
+  📖 Primary source:
+  <a href="https://realpython.com/python-application-layouts/" target="_blank">
+    Real Python — Python Application Layouts
+  </a> — explains why separating logic from UI is standard practice in Python projects.
+</p>
+
+<div class="ask-me">
+  <strong>Ask your teacher:</strong> Anything unclear about the map? Not sure why a
+  module exists? Wondering what a specific line in any of these files does?
+  Just ask — this is what the lessons are for.
+</div>
+
+<div class="nav">
+  <span>Lesson 1 of ?</span>
+  <a class="next" href="0002-threading-queue.html">Next: How the UI stays alive →</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

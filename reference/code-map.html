@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Map · SentinelGUI</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 10pt; line-height: 1.5; color: #1a1a1a; max-width: 840px; margin: 0 auto; padding: 2em; }
+  h1 { font-size: 18pt; margin-bottom: .2em; color: #003056; }
+  h2 { font-size: 13pt; margin: 1.5em 0 .3em; color: #003056; border-bottom: 2px solid #dee2e6; padding-bottom: .2em; }
+  h3 { font-size: 11pt; margin: 1em 0 .2em; color: #003056; display: inline; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 8pt; font-weight: 700; margin-right: 4px; }
+  .tag-core { background: #003056; color: #fff; }
+  .tag-dash { background: #0d6efd; color: #fff; }
+  .tag-data { background: #6f42c1; color: #fff; }
+  .tag-util { background: #6c757d; color: #fff; }
+  .tag-report { background: #198754; color: #fff; }
+  .tag-test { background: #dc3545; color: #fff; }
+  .file { font-family: 'Cascadia Code', 'Consolas', monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 9pt; white-space: nowrap; }
+  .path { color: #666; font-size: 8pt; font-family: monospace; }
+  code { background: #e9ecef; padding: 1px 4px; border-radius: 3px; font-size: 9pt; }
+  pre { background: #f4f4f4; padding: .8em; border-radius: 6px; font-size: 8.5pt; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin: .5em 0; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #dee2e6; font-size: 9pt; }
+  th { background: #003056; color: #fff; font-size: 8pt; }
+  .flow-arrow { color: #0d6efd; font-weight: 700; }
+  hr { border: none; border-top: 1px solid #dee2e6; margin: 1em 0; }
+  .s { font-size: 8pt; color: #666; }
+  .file-block { margin: .6em 0; padding: .5em .8em; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #0d6efd; }
+  @media print { body { font-size: 9pt; padding: 0; } .file-block { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>SentinelGUI — Full Code Map</h1>
+<p style="color:#555;">Every file explained: what it does, its key classes, and how it connects to the rest of the system.</p>
+
+<table>
+  <tr><th>Layer</th><th>Tag</th><th>Files</th></tr>
+  <tr><td>Entry point</td><td><span class="tag tag-core">MAIN</span></td><td><span class="file">__main__.py</span></td></tr>
+  <tr><td>Data model</td><td><span class="tag tag-data">DATA</span></td><td><span class="file">models.py</span></td></tr>
+  <tr><td>Data sources</td><td><span class="tag tag-core">SRC</span></td><td><span class="file">acquisition.py</span>, <span class="file">simulator.py</span>, <span class="file">process_engine.py</span></td></tr>
+  <tr><td>Business logic</td><td><span class="tag tag-core">LOGIC</span></td><td><span class="file">reading_window.py</span>, <span class="file">alarm_manager.py</span>, <span class="file">fault_engine.py</span>, <span class="file">react_agent.py</span></td></tr>
+  <tr><td>App controller</td><td><span class="tag tag-core">APP</span></td><td><span class="file">app.py</span></td></tr>
+  <tr><td>Dashboard (GUI)</td><td><span class="tag tag-dash">GUI</span></td><td><span class="file">main_window.py</span>, <span class="file">sensor_card.py</span>, <span class="file">trend_chart.py</span>, <span class="file">mimic_diagram.py</span>, <span class="file">alarm_panel.py</span>, <span class="file">trace_panel.py</span>, <span class="file">fault_log.py</span>, <span class="file">ai_panel.py</span>, <span class="file">theme.py</span></td></tr>
+  <tr><td>Output/reporting</td><td><span class="tag tag-report">RPT</span></td><td><span class="file">report.py</span>, <span class="file">exhibition_doc.py</span>, <span class="file">exhibition_docx.py</span>, <span class="file">data_logger.py</span></td></tr>
+  <tr><td>Config</td><td><span class="tag tag-util">CFG</span></td><td><span class="file">scenario.py</span>, <span class="file">thresholds.py</span></td></tr>
+  <tr><td>Bridge</td><td><span class="tag tag-util">BRIDGE</span></td><td><span class="file">sentinelcli_bridge.py</span>, <span class="file">shutdown_controller.py</span></td></tr>
+  <tr><td>Tests</td><td><span class="tag tag-test">TEST</span></td><td>9 test files in <span class="file">tests/</span></td></tr>
+</table>
+
+<!-- ============================================================== -->
+<h2>Entry Point</h2>
+
+<div class="file-block">
+<h3><span class="file">__main__.py</span></h3> <span class="path">sentinelgui/__main__.py</span> <span class="tag tag-core">MAIN</span>
+<p><strong>Purpose:</strong> The script that runs when you type <code>python -m sentinelgui</code>. Parses CLI arguments and wires everything together.</p>
+<p><strong>Key function:</strong> <code>main()</code></p>
+<table>
+  <tr><th>Argument</th><th>Effect</th></tr>
+  <tr><td><code>--simulate</code></td><td>Use the built-in fault simulator instead of Arduino hardware</td></tr>
+  <tr><td><code>--port</code> <code>--baud</code></td><td>Serial port settings for real hardware</td></tr>
+  <tr><td><code>--kiosk</code></td><td>Fullscreen exhibition mode with enlarged UI</td></tr>
+  <tr><td><code>--scenario</code> / <code>-s</code></td><td>Which process to monitor (reactor, boiler, distillation, contact)</td></tr>
+  <tr><td><code>--config</code></td><td>Path to custom GUI config JSON</td></tr>
+</table>
+<p><strong>Flow:</strong></p>
+<pre>__main__.main()
+  &rarr; AppController(scenario_id)   # app.py
+  &rarr; controller.use_serial() | use_simulator()
+  &rarr; MainWindow(controller)       # dashboard/main_window.py
+  &rarr; controller.start()
+  &rarr; window.run()                 # root.mainloop() — blocks until window closes
+  &rarr; controller.stop()            # generates PDF report
+</pre>
+</div>
+
+<!-- ============================================================== -->
+<h2>Data Model</h2>
+
+<div class="file-block">
+<h3><span class="file">models.py</span></h3> <span class="path">sentinelgui/models.py</span> <span class="tag tag-data">DATA</span>
+<p><strong>Purpose:</strong> All the dataclasses used across every module. Zero imports beyond <code>dataclasses</code> and <code>typing</code> — any module can import models.py without pulling in GUI or hardware dependencies.</p>
+
+<p><strong>Dataclasses defined:</strong></p>
+<table>
+  <tr><th>Class</th><th>Fields</th><th>Used by</th></tr>
+  <tr><td><strong>Reading</strong></td><td>timestamp, values dict, seq, source, raw</td><td>Every module — the unit of data flowing through the pipeline</td></tr>
+  <tr><td><strong>Alarm</strong></td><td>sensor, value, severity, limit, bound, raised_at, cleared_at, state</td><td>AlarmManager, AlarmPanel, react_agent, report</td></tr>
+  <tr><td><strong>FaultDiagnosis</strong></td><td>fault, explanation, source, confidence, related_sensors</td><td>fault_engine, react_agent, fault_log, trace_panel</td></tr>
+  <tr><td><strong>FaultHistoryEntry</strong></td><td>timestamp, sensor, value, severity, fault, explanation, source</td><td>app.py, report.py</td></tr>
+  <tr><td><strong>RecordingSession</strong></td><td>path, state, started_at, rows_written, error</td><td>data_logger.py</td></tr>
+  <tr><td><strong>DataSource</strong></td><td>kind, status, detail</td><td>app.py</td></tr>
+  <tr><td><strong>ProcessStage</strong></td><td>name, health</td><td>(reserved for mimic)</td></tr>
+  <tr><td><strong>ShutdownEvent</strong></td><td>timestamp, triggered_by, ui_safe_state, etc.</td><td>shutdown_controller.py</td></tr>
+</table>
+
+<p><strong>Also defines constants:</strong> <code>SENSOR_KEYS</code>, <code>SENSOR_LABELS</code>, <code>SENSOR_UNITS</code>, <code>SENSOR_STAGE</code>, <code>PROCESS_STAGES</code>, <code>FAULT_KEYS</code>.</p>
+</div>
+
+<!-- ============================================================== -->
+<h2>Data Sources</h2>
+
+<div class="file-block">
+<h3><span class="file">acquisition.py</span></h3> <span class="path">sentinelgui/acquisition.py</span> <span class="tag tag-core">SRC</span>
+<p><strong>Purpose:</strong> Reads sensor data from an Arduino over USB serial. Handles opening the port, reading CSV frames in a background thread, parsing them, and pushing parsed frames onto a thread-safe queue.</p>
+<p><strong>Libraries used:</strong> <code>pyserial</code> (lazy import — only loaded when hardware mode is activated)</p>
+<p><strong>Key class:</strong> <code>SerialDataAcquisition</code></p>
+<ul>
+  <li><code>start()</code> — Opens serial port, spawns reader thread</li>
+  <li><code>stop()</code> — Closes port, joins thread</li>
+  <li><em>(background thread)</em> — Calls <code>readline()</code>, splits by comma, converts to floats, pushes <code>{"temperature": x, "flow_rate": y, "pressure": z}</code> onto <code>out_queue</code></li>
+</ul>
+<p><strong>Why lazy import?</strong> If running <code>--simulate</code>, pyserial is never imported. Zero dependency overhead in simulation mode.</p>
+<p><strong>Output:</strong> Raw dicts onto <code>queue.Queue</code> — same format as the simulator, so downstream code is source-agnostic.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">simulator.py</span></h3> <span class="path">sentinelgui/simulator.py</span> <span class="tag tag-core">SRC</span>
+<p><strong>Purpose:</strong> No-hardware data source for demos and development. Generates realistic readings with noise and on-demand fault injection.</p>
+<p><strong>Key class:</strong> <code>FaultSimulator</code></p>
+<ul>
+  <li><code>inject(fault)</code> — Start easing readings toward a fault signature</li>
+  <li><code>clear_fault()</code> — Return toward nominal</li>
+  <li><code>next_frame()</code> — Advance one tick (25% toward target + random noise) and return values</li>
+  <li><code>start()</code> / <code>stop()</code> — Background thread that pushes frames at 1 Hz onto a queue</li>
+</ul>
+<p><strong>Fault signatures (reachable after ~15 ticks):</strong></p>
+<table>
+  <tr><th>Fault</th><th>Temperature &rarr;</th><th>Flow Rate &rarr;</th><th>Pressure &rarr;</th></tr>
+  <tr><td>blockage</td><td>nominal</td><td>low</td><td>high</td></tr>
+  <tr><td>pump_failure</td><td>nominal</td><td>~0</td><td>low</td></tr>
+  <tr><td>cavitation</td><td>nominal</td><td>nominal</td><td>low + sin oscillation</td></tr>
+  <tr><td>fouling</td><td>rising slowly</td><td>mildly reduced</td><td>nominal</td></tr>
+  <tr><td>thermal_runaway</td><td>steep rise</td><td>nominal</td><td>nominal</td></tr>
+  <tr><td>cooling_failure</td><td>rising</td><td>nominal</td><td>nominal</td></tr>
+</table>
+</div>
+
+<div class="file-block">
+<h3><span class="file">process_engine.py</span></h3> <span class="path">sentinelgui/process_engine.py</span> <span class="tag tag-core">SRC</span>
+<p><strong>Purpose:</strong> Converts raw sensor frames into <code>Reading</code> objects. The Arduino already sends engineering units, so this is mostly pass-through with a calibration hook.</p>
+<p><strong>Key functions:</strong></p>
+<ul>
+  <li><code>to_engineering(raw)</code> — Apply <code>value * scale + offset</code> per sensor; returns <code>None</code> if any result is non-finite (NaN/infinity)</li>
+  <li><code>build_reading(raw, seq, source, now)</code> — Creates a <code>Reading</code> object; returns <code>None</code> on conversion failure</li>
+</ul>
+<p><strong>Calibration:</strong> <code>CALIBRATION = {"temperature": (1.0, 0.0), "flow_rate": (1.0, 0.0), "pressure": (1.0, 0.0)}</code> — identity by default. Edit to add scaling without changing firmware.</p>
+</div>
+
+<!-- ============================================================== -->
+<h2>Business Logic</h2>
+
+<div class="file-block">
+<h3><span class="file">reading_window.py</span></h3> <span class="path">sentinelgui/reading_window.py</span> <span class="tag tag-core">LOGIC</span>
+<p><strong>Purpose:</strong> A bounded, time-ordered buffer of the most recent 300 readings. Used for trend slope and variance calculations.</p>
+<p><strong>Key class:</strong> <code>ReadingWindow</code></p>
+<ul>
+  <li><code>append(reading)</code> — Add a reading (oldest falls off when buffer is full)</li>
+  <li><code>series(sensor)</code> — Return all values for a sensor as a list</li>
+  <li><code>slope(sensor, n=10)</code> — Average per-sample rate of change over the last N readings: <code>(last - first) / (count - 1)</code></li>
+  <li><code>variance(sensor, n=10)</code> — Population variance over the last N readings (used for cavitation detection)</li>
+</ul>
+<p><strong>Implementation:</strong> Backed by <code>collections.deque(maxlen=300)</code> — O(1) append, bounded memory.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">alarm_manager.py</span></h3> <span class="path">sentinelgui/alarm_manager.py</span> <span class="tag tag-core">LOGIC</span>
+<p><strong>Purpose:</strong> Classifies each sensor value into normal / warning / critical zones. Applies debounce to prevent flickering alarms.</p>
+<p><strong>Key class:</strong> <code>AlarmManager</code></p>
+<ul>
+  <li><code>evaluate(reading)</code> &rarr; list of state changes (alarms raised or cleared)</li>
+  <li>Debounce: a value must be out of range for 2 consecutive readings before an alarm fires</li>
+  <li><code>.active</code> &rarr; list of currently active alarms</li>
+  <li><code>.history</code> &rarr; all alarms from this session</li>
+</ul>
+<p><strong>How zone_of works:</strong> Checks critical band first (if value &lt; critical.min or &gt; critical.max &rarr; critical). Then checks warning band. Otherwise normal. Bounds are inclusive.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">fault_engine.py</span></h3> <span class="path">sentinelgui/fault_engine.py</span> <span class="tag tag-core">LOGIC</span>
+<p><strong>Purpose:</strong> The heart of diagnosis. A rule-based classifier that checks 6 fault signatures in priority order (first match wins).</p>
+<p><strong>Key function:</strong> <code>classify(reading, window, active)</code> &rarr; <code>FaultDiagnosis</code></p>
+<p><strong>Resolution order:</strong></p>
+<table>
+  <tr><th>#</th><th>Fault</th><th>Condition</th><th>Confidence</th></tr>
+  <tr><td>1</td><td><strong>Pump failure</strong></td><td>flow &le; FLOW_NEAR_ZERO AND press &le; PRESS_LOW</td><td>high if both slopes &le; 0</td></tr>
+  <tr><td>2</td><td><strong>Blockage</strong></td><td>flow &lt; FLOW_LOW AND press &gt; PRESS_HIGH</td><td>high if flow down AND press up</td></tr>
+  <tr><td>3</td><td><strong>Cavitation</strong></td><td>press &lt; PRESS_LOW AND pressure variance &gt; threshold</td><td>medium (always)</td></tr>
+  <tr><td>4</td><td><strong>Thermal runaway</strong></td><td>temp &ge; TEMP_CRITICAL</td><td>high if temp slope &ge; steep</td></tr>
+  <tr><td>5</td><td><strong>Cooling failure</strong></td><td>temp &gt; TEMP_WARN AND flow adequate (&ge; FLOW_ADEQUATE)</td><td>high if temp rising</td></tr>
+  <tr><td>6</td><td><strong>Fouling</strong></td><td>temp &gt; TEMP_WARN AND flow reduced (&lt; FLOW_ADEQUATE)</td><td>high if temp up AND flow down</td></tr>
+  <tr><td>7</td><td><strong>Undetermined</strong></td><td>no signature matched</td><td>low</td></tr>
+</table>
+<p><strong>Tuning:</strong> Global constants (FLOW_LOW, PRESS_HIGH, etc.) are overridden per scenario via <code>set_tuning()</code>. <code>reset_tuning()</code> restores reactor defaults. See <span class="file">scenario.py</span> and <code>config/scenarios/*.json</code>.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">react_agent.py</span></h3> <span class="path">sentinelgui/react_agent.py</span> <span class="tag tag-core">LOGIC</span>
+<p><strong>Purpose:</strong> The Observe &rarr; Reason &rarr; Act loop. Ties together the alarm manager, reading window, and fault engine into one per-reading step.</p>
+<p><strong>Key class:</strong> <code>ReActAgent</code></p>
+<ul>
+  <li><code>step(reading)</code> &rarr; <code>AgentResult</code> — evaluates alarms, calls classify, builds stage health, generates trace</li>
+  <li><code>_stage_health(diagnosis)</code> — colours mimic stages based on active alarms; dynamically maps pump/blower faults to the correct stage</li>
+  <li><code>request_ai(alarm, callback)</code> — optional Gemini AI enrichment on a background thread (never blocks UI)</li>
+</ul>
+<p><strong>Output:</strong> <code>AgentResult</code> containing: <code>new_alarms</code>, <code>cleared_alarms</code>, <code>diagnosis</code> (FaultDiagnosis or None), <code>stage_health</code> dict, <code>trace</code> list of human-readable strings.</p>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>App Controller</h2>
+
+<div class="file-block">
+<h3><span class="file">app.py</span></h3> <span class="path">sentinelgui/app.py</span> <span class="tag tag-core">APP</span>
+<p><strong>Purpose:</strong> The central coordinator. Owns the scenario, bands, window, alarms, agent, and data source. Runs the <code>poll()</code> loop on a timer. Handles scenario switching, serial fallback, fault injection, emergency shutdown, and report generation.</p>
+<p><strong>Key class:</strong> <code>AppController</code></p>
+<table>
+  <tr><th>Method</th><th>What it does</th></tr>
+  <tr><td><code>use_simulator()</code></td><td>Creates <code>FaultSimulator</code> with current scenario's nominal/targets</td></tr>
+  <tr><td><code>use_serial(port, baud)</code></td><td>Creates <code>SerialDataAcquisition</code></td></tr>
+  <tr><td><code>start()</code></td><td>Starts the data source + a 100ms UI timer that calls <code>poll()</code></td></tr>
+  <tr><td><code>stop()</code></td><td>Generates PDF report, stops data source</td></tr>
+  <tr><td><code>poll()</code></td><td>Drains the queue, builds readings, passes through agent pipeline, updates the view</td></tr>
+  <tr><td><code>inject_fault(fault)</code></td><td>Injects a fault into the simulator (ignored in hardware mode)</td></tr>
+  <tr><td><code>clear_fault()</code></td><td>Clears the active fault</td></tr>
+  <tr><td><code>switch_scenario(id)</code></td><td>Reloads scenario JSON, resets bands, windows, alarms — keeps the dashboard running</td></tr>
+  <tr><td><code>emergency_stop()</code></td><td>Latches SHUTDOWN state, sends STOP command over serial, generates report</td></tr>
+  <tr><td><code>_auto_recover_to_simulator()</code></td><td>2 missed readings &rarr; transparently switches from serial to simulator</td></tr>
+</table>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Dashboard — GUI Layer</h2>
+
+<p>The dashboard lives in <span class="file">sentinelgui/dashboard/</span> and uses <strong>customtkinter</strong> for all widgets. Every file imports <code>customtkinter as ctk</code>. Files derive from <code>ctk.CTkFrame</code> and are composed in <span class="file">main_window.py</span>.</p>
+
+<div class="file-block">
+<h3><span class="file">main_window.py</span></h3> <span class="path">sentinelgui/dashboard/main_window.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> The root application window. Composes all panels (sensor cards, trend charts, mimic diagram, alarm panel, trace panel, fault log, AI panel) and the toolbar. Handles <code>update(state)</code> calls from <code>AppController</code> that refresh every widget.</p>
+<p><strong>Key features:</strong> Scenario dropdown, Inject Fault dropdown, Clear Fault button, Emergency Stop button, Record toggle, Kiosk mode (fullscreen, enlarged fonts, confirmation dialog for stop).</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">sensor_card.py</span></h3> <span class="path">sentinelgui/dashboard/sensor_card.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> One card per sensor showing current value, label, unit, and zone colour (normal = green, warning = amber, critical = red). Uses <code>ctk.CTkFrame</code> with <code>CTkLabel</code> children. Calls <code>configure(fg_color=...)</code> to update colour on each reading.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">trend_chart.py</span></h3> <span class="path">sentinelgui/dashboard/trend_chart.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Real-time line chart per sensor using Matplotlib embedded in CustomTkinter. Creates one <code>matplotlib.figure.Figure</code> per sensor, draws a rolling line of the last ~60 readings, colours the line by zone.</p>
+<p><strong>Key imports:</strong> <code>from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg</code>, <code>from matplotlib.figure import Figure</code>.</p>
+<p><strong>Key method:</strong> <code>update_chart(values)</code> — appends a point, scrolls the x-axis, recolours lines.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">mimic_diagram.py</span></h3> <span class="path">sentinelgui/dashboard/mimic_diagram.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Process flow diagram drawn on a Tk Canvas. Each stage is a rectangle; arrows connect consecutive stages. Stages are coloured by health (normal / warning / critical). Adapts dynamically to any scenario's stage list.</p>
+<p><strong>Key method:</strong> <code>update_health(stage_health)</code> — recolours each node based on its current zone.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">alarm_panel.py</span></h3> <span class="path">sentinelgui/dashboard/alarm_panel.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Scrollable table of active and cleared alarms. Each row shows: timestamp, sensor, severity (coloured badge), value, limit breached. New alarms are prepended. Severity colouring: warning = amber background, critical = red background, cleared = grey.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">trace_panel.py</span></h3> <span class="path">sentinelgui/dashboard/trace_panel.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Displays the agent's reasoning trace in Observe &rarr; Reason &rarr; Act format. Each entry shows: sensor values with zone labels, the diagnosis (fault name + confidence), and the action taken (alarm raised). Automatically scrolls to show the latest entry.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">fault_log.py</span></h3> <span class="path">sentinelgui/dashboard/fault_log.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Persistent log of every fault diagnosed during the session. Shows timestamp, fault type, explanation, and confidence. Separate from alarms because one fault may span multiple readings (and thus multiple alarms).</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">ai_panel.py</span></h3> <span class="path">sentinelgui/dashboard/ai_panel.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Optional enrichment panel that sends the current alarm context to Google Gemini for a natural-language explanation. Shows a "Get AI Insight" button per alarm. Displays the AI response in a scrollable text area. Runs the API call on a background thread &mdash; UI never blocks.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">theme.py</span></h3> <span class="path">sentinelgui/dashboard/theme.py</span> <span class="tag tag-dash">GUI</span>
+<p><strong>Purpose:</strong> Central colour palette and font sizes for the entire dashboard. All other dashboard files import from here rather than hardcoding colours. Makes global theme changes trivial. Defines: <code>BG</code>, <code>PANEL</code>, <code>PANEL_LIGHT</code>, <code>MUTED</code>, <code>ZONE_COLORS</code>, <code>font()</code> helper.</p>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Output and Reporting</h2>
+
+<div class="file-block">
+<h3><span class="file">report.py</span></h3> <span class="path">sentinelgui/report.py</span> <span class="tag tag-report">RPT</span>
+<p><strong>Purpose:</strong> Generates a one-page PDF summary at the end of a session (emergency stop or window close). Contains: scenario name, duration, readings processed, alarm counts by severity, fault counts, and a timeline table.</p>
+<p><strong>Library:</strong> <code>fpdf2</code> — pure Python PDF generation.</p>
+<p><strong>Note:</strong> Uses ASCII-safe <code>_s()</code> helper because fpdf2's built-in Helvetica font doesn't support Unicode.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">exhibition_doc.py</span></h3> <span class="path">sentinelgui/exhibition_doc.py</span> <span class="tag tag-report">RPT</span>
+<p><strong>Purpose:</strong> Generates the 7-page exhibition handout PDF (<code>sentinelgui_exhibition.pdf</code>). Covers: system overview, sensor spec, fault catalog with chemistry explanations, multi-scenario config, command reference, architecture diagram.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">exhibition_docx.py</span></h3> <span class="path">sentinelgui/exhibition_docx.py</span> <span class="tag tag-report">RPT</span>
+<p><strong>Purpose:</strong> Word document version of the exhibition handout (<code>sentinelgui_exhibition.docx</code>). Same content as <code>exhibition_doc.py</code> but in DOCX format using <code>python-docx</code>.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">data_logger.py</span></h3> <span class="path">sentinelgui/data_logger.py</span> <span class="tag tag-report">RPT</span>
+<p><strong>Purpose:</strong> Records the reading stream to a timestamped CSV file. One row per reading with columns: timestamp, seq, source, temperature, flow_rate, pressure, alarms. Uses Python's built-in <code>csv</code> module — no pandas needed. If the file can't be written, the session enters an error state but monitoring continues.</p>
+<p><strong>Key class:</strong> <code>DataLogger</code> with <code>start()</code>, <code>write()</code>, <code>stop()</code>.</p>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Configuration</h2>
+
+<div class="file-block">
+<h3><span class="file">scenario.py</span></h3> <span class="path">sentinelgui/scenario.py</span> <span class="tag tag-util">CFG</span>
+<p><strong>Purpose:</strong> Loads scenario JSON files from <code>config/scenarios/</code>. Each JSON defines: sensor labels, stage names, nominal values, fault targets, thresholds, fault tuning constants, and fault explanations.</p>
+<p><strong>Key class:</strong> <code>Scenario</code> — holds all parsed fields: <code>name</code>, <code>stages</code>, <code>stage_sensor</code>, <code>nominal</code>, <code>fault_targets</code>, <code>thresholds</code>, <code>fault_tuning</code>, <code>fault_explanations</code>.</p>
+<p><strong>Key functions:</strong> <code>load_scenario(id)</code> &rarr; Scenario, <code>list_scenarios()</code> &rarr; list of available scenario dicts.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">thresholds.py</span></h3> <span class="path">sentinelgui/thresholds.py</span> <span class="tag tag-util">CFG</span>
+<p><strong>Purpose:</strong> Two-band (warning/critical) threshold model. Validates nesting invariant: critical band must contain the warning band. Reuses SentinelCLI's <code>project.check_reading()</code> for zone evaluation so GUI and CLI agree on "in range".</p>
+<p><strong>Key function:</strong> <code>zone_of(sensor, value, bands)</code> &rarr; "normal" | "warning" | "critical".</p>
+<p><strong>Key class:</strong> <code>ThresholdBand</code> with <code>critical</code> dict and <code>warning</code> dict (each with min/max).</p>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Bridge Modules</h2>
+
+<div class="file-block">
+<h3><span class="file">sentinelcli_bridge.py</span></h3> <span class="path">sentinelgui/sentinelcli_bridge.py</span> <span class="tag tag-util">BRIDGE</span>
+<p><strong>Purpose:</strong> Reuses SentinelCLI's <code>diagnose_alert()</code> function and optional Gemini AI enrichment. Converts between <code>Alarm</code> (GUI model) and the CLI's alert dict format. AI calls use <code>urllib</code> to hit the Gemini REST API — no third-party SDK.</p>
+<p><strong>Key functions:</strong> <code>alarm_to_cli_alert(alarm)</code>, <code>ai_diagnose(alarm, client, timeout=10)</code>.</p>
+</div>
+
+<div class="file-block">
+<h3><span class="file">shutdown_controller.py</span></h3> <span class="path">sentinelgui/shutdown_controller.py</span> <span class="tag tag-util">BRIDGE</span>
+<p><strong>Purpose:</strong> Manages the emergency shutdown sequence. Latches a safe UI state, sends a <code>CMD:STOP</code> command over serial (if available), and records the outcome. Integrates a countdown timer for automatic shutdown escalation.</p>
+<p><strong>Key class:</strong> <code>ShutdownController</code> — states: idle &rarr; latching &rarr; confirming &rarr; shutdown.</p>
+</div>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Data Flow Diagram</h2>
+
+<pre style="font-size:8pt;line-height:1.3;">
+  HARDWARE PATH                    SIMULATOR PATH                    GUI (main thread)
+  ──────────────                    ──────────────                    ─────────────────
+  Arduino (serial)                  FaultSimulator
+       │                                  │
+       ▼                                  ▼
+  acquisition.py (pyserial)        simulator.py
+       │                                  │
+       └──────────── queue.Queue ─────────┘
+                              │
+                              ▼
+                    process_engine.py  ──►  Reading objects
+                              │
+                              ├──►  reading_window.py  (deque, 300 readings)
+                              │         │
+                              │         ├── slope()     for trend analysis
+                              │         └── variance()  for cavitation
+                              │
+                              ├──►  alarm_manager.py  (zone classification)
+                              │         │
+                              │         ├── active alarms list
+                              │         └── history list
+                              │
+                              ├──►  fault_engine.py  (classify)
+                              │         │
+                              │         └── FaultDiagnosis
+                              │
+                              └──►  react_agent.py  (AgentResult)
+                                        │
+                                        ▼
+                                  AppController (poll)
+                                        │
+                                        ▼
+                                  MainWindow (update)
+                                        │
+                          ┌─────────────┼──────────────┐
+                          ▼             ▼              ▼
+                    sensor_card    trend_chart    mimic_diagram
+                    alarm_panel    trace_panel    fault_log
+                    ai_panel (optional Gemini)
+</pre>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Scenario JSON Structure</h2>
+<p>Each file in <span class="file">config/scenarios/</span> defines a complete process:</p>
+<pre style="font-size:8pt;">
+.config/
+  scenarios/
+    reactor.json        Default — cooling loop
+    boiler.json         Steam boiler (high temp/pressure)
+    distillation.json   Distillation column
+    contact.json        Sulfuric acid contact process (exhibition focus)
+</pre>
+
+<p><strong>JSON keys explained:</strong></p>
+<table>
+  <tr><th>Key</th><th>Purpose</th><th>Example (contact)</th></tr>
+  <tr><td><code>name</code></td><td>Display name for the dashboard</td><td>"Contact Process"</td></tr>
+  <tr><td><code>sensors</code></td><td>Custom labels and units per sensor</td><td>Converter Bed Temp (&deg;C)</td></tr>
+  <tr><td><code>stages</code></td><td>Mimic diagram node names</td><td>Sulfur Burner, Blower, Flow Sensor, &Delta;P Sensor, Converter</td></tr>
+  <tr><td><code>stage_sensor</code></td><td>Which sensor drives each stage's colour</td><td>Flow Sensor &rarr; flow_rate</td></tr>
+  <tr><td><code>nominal</code></td><td>Normal operating point</td><td>temp=430, flow=25, press=1.8</td></tr>
+  <tr><td><code>fault_targets</code></td><td>Where each fault eases the values toward</td><td>blockage &rarr; flow=1, press=4.5</td></tr>
+  <tr><td><code>thresholds</code></td><td>Warning and critical bands per sensor</td><td>temp crit: 350&ndash;550</td></tr>
+  <tr><td><code>fault_tuning</code></td><td>Rule engine constants for this process</td><td>temp_warn=470, flow_low=10</td></tr>
+  <tr><td><code>fault_explanations</code></td><td>Chemistry explanations for each fault</td><td>"Catalyst bed plugging..."</td></tr>
+</table>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>File Import Graph</h2>
+<p>How the modules depend on each other:</p>
+<pre style="font-size:7.5pt;">
+__main__.py  ──►  app.py  ──►  models.py
+  │                    ├──►  scenario.py  ──►  models.py
+  │                    ├──►  thresholds.py  ──►  project (SentinelCLI)
+  │                    ├──►  reading_window.py
+  │                    ├──►  alarm_manager.py  ──►  thresholds.py, models.py
+  │                    ├──►  fault_engine.py  ──►  models.py, reading_window.py
+  │                    ├──►  react_agent.py  ──►  fault_engine.py, models.py, reading_window.py
+  │                    ├──►  acquisition.py  ──►  (pyserial — lazy)
+  │                    ├──►  simulator.py
+  │                    ├──►  process_engine.py  ──►  models.py
+  │                    ├──►  data_logger.py  ──►  models.py
+  │                    ├──►  sentinelcli_bridge.py  ──►  project, models.py
+  │                    ├──►  shutdown_controller.py  ──►  models.py
+  │                    ├──►  report.py  ──►  (fpdf2)
+  │                    └──►  dashboard/main_window.py  ──►  all dashboard/* files
+  │                              ├──  sensor_card.py (customtkinter)
+  │                              ├──  trend_chart.py (customtkinter + matplotlib)
+  │                              ├──  mimic_diagram.py (customtkinter + tkinter Canvas)
+  │                              ├──  alarm_panel.py (customtkinter)
+  │                              ├──  trace_panel.py (customtkinter)
+  │                              ├──  fault_log.py (customtkinter)
+  │                              ├──  ai_panel.py (customtkinter)
+  │                              └──  theme.py (no deps — pure constants)
+  └──►  exhibition_doc.py  ──►  (fpdf2)
+  └──►  exhibition_docx.py  ──►  (python-docx)
+</pre>
+
+<hr>
+
+<!-- ============================================================== -->
+<h2>Test Files</h2>
+<p>51 unit tests in <span class="file">sentinelgui/tests/</span>. All pass. Run with <code>pytest</code>.</p>
+<table>
+  <tr><th>File</th><th>Tests</th><th>What it covers</th></tr>
+  <tr><td><span class="file">test_acquisition.py</span></td><td>5</td><td>CSV frame parsing, error handling</td></tr>
+  <tr><td><span class="file">test_alarm_manager.py</span></td><td>4</td><td>Zone classification, debounce, history</td></tr>
+  <tr><td><span class="file">test_data_logger.py</span></td><td>3</td><td>File creation, write, error handling</td></tr>
+  <tr><td><span class="file">test_fault_engine.py</span></td><td>6</td><td>All 6 fault signatures + undetermined</td></tr>
+  <tr><td><span class="file">test_integration_pipeline.py</span></td><td>4</td><td>End-to-end: simulator &rarr; engine &rarr; agent</td></tr>
+  <tr><td><span class="file">test_process_engine.py</span></td><td>4</td><td>Engineering conversion, Reading building</td></tr>
+  <tr><td><span class="file">test_react_agent.py</span></td><td>3</td><td>Step: no alarm, alarm+d diagnosis, alarm clear</td></tr>
+  <tr><td><span class="file">test_sentinelcli_bridge.py</span></td><td>4</td><td>Alarm mapping, AI diagnosis</td></tr>
+  <tr><td><span class="file">test_shutdown_controller.py</span></td><td>5</td><td>Trigger, outcome states, resume</td></tr>
+  <tr><td><span class="file">test_simulator.py</span></td><td>5</td><td>Nominal stream, fault injection, clear</td></tr>
+  <tr><td><span class="file">test_thresholds.py</span></td><td>7</td><td>Zone classification, boundary, nesting, loading</td></tr>
+</table>
+
+<hr>
+
+<div class="file-block" style="background:#fff3cd;border-left:4px solid #ffc107;">
+<p><strong>Tips for exhibition:</strong></p>
+<ul>
+  <li>Start at <span class="file">__main__.py</span> and trace the entry point</li>
+  <li>Show <span class="file">fault_engine.py</span> — it's only 200 lines, the most important logic in the project</li>
+  <li>Open <span class="file">models.py</span> to show how clean the data model is (pure dataclasses, zero GUI imports)</li>
+  <li>Point out the lazy pyserial import in <span class="file">acquisition.py</span> — it's a design pattern worth explaining</li>
+  <li>Show a scenario JSON to demonstrate how <em>all</em> process-specific config lives outside code</li>
+</ul>
+</div>
+
+<p style="margin-top:2em;font-size:9pt;color:#666;">SentinelGUI &middot; <code>sentinelgui/</code> &middot; Built with SpecKit Plus &middot; Chemical Technology Exhibition July 2026 &middot; <a href="../lessons/0001-exhibition-walkthrough.html">Walkthrough</a> &middot; <a href="exhibition-qa.html">Q&amp;A</a> &middot; <a href="dependencies.html">Dependencies</a></p>
+
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exhibition Q&amp;A · SentinelGUI</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; max-width: 780px; margin: 0 auto; padding: 2em; }
+  h1 { font-size: 20pt; margin-bottom: .2em; color: #003056; }
+  h2 { font-size: 14pt; margin: 1.5em 0 .4em; color: #003056; border-bottom: 2px solid #dee2e6; }
+  .qa { margin: 1.2em 0; }
+  .q { font-weight: 700; color: #003056; padding: 8px 12px; background: #e8f0fe; border-radius: 6px 6px 0 0; }
+  .a { padding: 8px 12px; background: #f8f9fa; border-radius: 0 0 6px 6px; border-left: 3px solid #0d6efd; margin-top: 2px; }
+  .a code { background: #e9ecef; padding: 1px 4px; border-radius: 3px; font-size: 10pt; }
+  .tldr { background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 6px; margin: .8em 0; font-size: 10pt; }
+  hr { border: none; border-top: 1px solid #dee2e6; margin: 1.2em 0; }
+  @media print { body { font-size: 10pt; padding: 0; } h2 { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>SentinelGUI — Exhibition Q&amp;A</h1>
+<p style="color:#555;margin-bottom:1.5em;">Anticipated questions from judges and visitors · July 2026</p>
+
+<div class="tldr"><strong>One-liner pitch:</strong> &ldquo;We built an open-source SCADA dashboard for industrial process monitoring that costs nothing, runs on any laptop, and explains faults in plain language &mdash; no expensive PLCs or proprietary software required.&rdquo;</div>
+
+<!-- ============================================================ -->
+<h2>Project Motivation</h2>
+
+<div class="qa">
+  <div class="q">Q: Why did you build this? Why not use existing SCADA software?</div>
+  <div class="a">
+    <p><strong>Short answer:</strong> Commercial SCADA (Siemens WinCC, Aveva, Ignition) costs thousands of dollars per license, requires industrial PLC hardware, and is a black box &mdash; you cannot read the source code or modify it.</p>
+    <p><strong>Long answer:</strong> We wanted an <strong>educational</strong> tool where students can:</p>
+    <ol>
+      <li>See every line of code that processes a sensor reading</li>
+      <li>Understand <em>why</em> a fault is diagnosed (the rule engine is readable Python, not a hidden algorithm)</li>
+      <li>Add new sensors, faults, or scenarios by editing JSON config files &mdash; no recompilation</li>
+      <li>Run the entire system on a $30 Arduino and a laptop, no industrial hardware required</li>
+    </ol>
+    <p>This makes it ideal for <strong>chemical technology education</strong>, where the focus should be on understanding the process &mdash; not on fighting proprietary configuration tools.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: How is SentinelGUI different from other open-source SCADA tools (ScadaBR, OpenSCADA)?</div>
+  <div class="a">
+    <p>Existing open-source SCADA tools are still <strong>heavy</strong> &mdash; they require a web server, database, and often Java runtime. SentinelGUI is intentionally minimal:</p>
+    <ul>
+      <li><strong>One command to run:</strong> <code>python -m sentinelgui --simulate</code></li>
+      <li><strong>Zero configuration files</strong> for basic use &mdash; sensible defaults built in</li>
+      <li><strong>Rule-based diagnosis is built-in,</strong> not an afterthought. The fault engine (<code>fault_engine.py</code>) is 200 lines of pure Python &mdash; you can read it in 10 minutes</li>
+      <li><strong>Multi-scenario:</strong> switch from reactor cooling to distillation column to contact process by changing one CLI flag. In commercial SCADA, this requires redesigning the HMI screens</li>
+      <li><strong>No database:</strong> state lives in memory (rolling window). For a teaching lab, persistent storage is overhead without benefit</li>
+    </ul>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: Who is this for?</div>
+  <div class="a">Chemical technology students and educators. It demonstrates how real-time monitoring, alarm management, and fault diagnosis work in industry &mdash; without the cost and complexity of an actual plant. It also serves as a project reference for Python learners who want to see how threading, queues, GUIs, and serial communication fit together in one application.</div>
+</div>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2>Architecture &amp; Design</h2>
+
+<div class="qa">
+  <div class="q">Q: Walk me through the data flow &mdash; from sensor to screen.</div>
+  <div class="a">
+    <ol>
+      <li><strong>Data source:</strong> Either an Arduino sending CSV frames over USB serial (<code>acquisition.py</code>) or the built-in <code>FaultSimulator</code> (<code>simulator.py</code>). Both push raw dicts onto a <code>queue.Queue</code>.</li>
+      <li><strong>Process engine</strong> (<code>process_engine.py</code>): The UI thread pops from the queue, converts raw values to engineering units, and creates a <code>Reading</code> object.</li>
+      <li><strong>Reading window</strong> (<code>reading_window.py</code>): A bounded deque that stores the last 300 readings for trend calculations.</li>
+      <li><strong>Alarm manager</strong> (<code>alarm_manager.py</code>): Classifies each sensor into normal / warning / critical using two-band thresholds. Applies debounce to prevent flickering.</li>
+      <li><strong>ReAct agent</strong> (<code>react_agent.py</code>): Calls <code>fault_engine.classify()</code> to produce a diagnosis. Generates a human-readable trace (Observe &rarr; Reason &rarr; Act).</li>
+      <li><strong>Dashboard:</strong> Updates sensor cards, trend charts, mimic diagram colours, alarm panel, and trace panel based on the AgentResult.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: Why does the UI never freeze? How does threading work?</div>
+  <div class="a">
+    <p>The critical insight is that <strong>tkinter is not thread-safe</strong> &mdash; all UI updates must happen on the main thread. The architecture works around this:</p>
+    <ul>
+      <li><strong>Background thread</strong> (serial reader or simulator) blocks on I/O and pushes raw frames onto a <code>queue.Queue</code></li>
+      <li><strong>Main thread</strong> runs a <code>poll()</code> timer every 100ms that drains the queue and processes readings</li>
+      <li>The queue acts as the thread-safe rendezvous point &mdash; the background producer never touches UI objects</li>
+    </ul>
+    <p>This is a classic <strong>producer-consumer</strong> pattern. The UI stays responsive because the main thread never blocks on I/O.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: What happens if the Arduino disconnects mid-operation?</div>
+  <div class="a">After 2 missed readings (2 seconds of silence), the controller automatically falls back to the built-in simulator. The user sees a status bar message: &ldquo;Serial link lost &mdash; auto-recovering into simulation mode&rdquo;. The demo continues without interruption. This is handled in <code>app.py</code> <code>_auto_recover_to_simulator()</code>.</div>
+</div>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2>Fault Diagnosis</h2>
+
+<div class="qa">
+  <div class="q">Q: How does the fault diagnosis work without AI?</div>
+  <div class="a">
+    <p><code>fault_engine.py</code> implements a <strong>rule-based classifier</strong>. For each reading, it checks against 6 fault signatures in order of specificity:</p>
+    <ol>
+      <li><strong>Pump failure</strong> &mdash; flow near zero AND pressure low</li>
+      <li><strong>Blockage</strong> &mdash; flow low AND pressure high</li>
+      <li><strong>Cavitation</strong> &mdash; pressure low AND oscillating</li>
+      <li><strong>Thermal runaway</strong> &mdash; temperature above critical limit</li>
+      <li><strong>Cooling failure</strong> &mdash; temperature elevated despite adequate flow</li>
+      <li><strong>Fouling</strong> &mdash; temperature elevated AND flow mildly reduced</li>
+      <li><strong>Undetermined</strong> &mdash; no signature matched</li>
+    </ol>
+    <p>The first match wins. This deterministic approach means the same input always produces the same diagnosis &mdash; no training data, no API call, no randomness.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: How do you tune the thresholds for different processes?</div>
+  <div class="a">Each scenario (reactor, boiler, distillation, contact process) has its own JSON config file under <code>config/scenarios/</code>. The <code>fault_tuning</code> block contains process-specific constants like <code>temp_warn</code>, <code>flow_near_zero</code>, <code>press_low</code>. The <code>set_tuning()</code> function in <code>fault_engine.py</code> applies these on scenario switch &mdash; no code changes needed. For example, a steam boiler operates at 180&deg;C, while a contact process converter runs at 430&deg;C; the thresholds adjust accordingly.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: When would you use the optional AI diagnosis?</div>
+  <div class="a">The rule-based engine handles the 6 fault signatures we designed for. But if an unexpected pattern appears (noise, sensor drift, novel fault), the AI enrichment button sends the alarm context to Google Gemini for a natural-language explanation. The rule engine still runs first &mdash; AI is advisory, not primary. This is implemented in <code>sentinelcli_bridge.py</code> using the Gemini REST API over <code>urllib</code>, with a 10-second timeout so it never blocks the UI.</div>
+</div>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2>Multi-Scenario System</h2>
+
+<div class="qa">
+  <div class="q">Q: What processes does SentinelGUI support?</div>
+  <div class="a">Four scenarios, switchable via <code>--scenario</code> flag:
+    <ul>
+      <li><strong>Reactor cooling loop</strong> (default) &mdash; jacket-cooled batch reactor, 0&ndash;100&deg;C</li>
+      <li><strong>Steam boiler</strong> &mdash; high-pressure steam generation, 100&ndash;250&deg;C</li>
+      <li><strong>Distillation column</strong> &mdash; binary distillation with reboiler and condenser, 40&ndash;120&deg;C</li>
+      <li><strong>Contact process</strong> &mdash; sulfuric acid production (SO&#8322; &rarr; SO&#8323;), converter bed at 430&deg;C</li>
+    </ul>
+    Each has custom sensor labels, thresholds, stage names, fault targets, and chemistry explanations &mdash; all in JSON, no code changes.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: How does the mimic diagram adapt to different processes?</div>
+  <div class="a">The <code>MimicDiagram</code> widget reads the <code>stages</code> array from the scenario JSON. For the reactor: Reservoir &rarr; Pump &rarr; Flow Sensor &rarr; Pressure Sensor &rarr; Reactor &rarr; Reservoir. For the contact process: Sulfur Burner &rarr; Blower &rarr; Flow Sensor &rarr; &Delta;P Sensor &rarr; Converter. The widget draws one rectangle per stage, connects them with arrows, and colours each stage based on its sensor zone or the active fault type &mdash; all dynamically, no hardcoded layouts.</div>
+</div>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2>Exhibition &amp; Practical Concerns</h2>
+
+<div class="qa">
+  <div class="q">Q: What if the demo laptop doesn't have an Arduino?</div>
+  <div class="a">Use <code>--simulate</code> flag. The built-in <code>FaultSimulator</code> generates realistic readings at 1 Hz with adjustable noise and fault injection. You can demonstrate every feature without any hardware. The simulator also auto-activates if the serial port fails to open.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: What about the physical model on display?</div>
+  <div class="a">The thermocol (styrofoam) model represents the contact process flow path: sulfur burner &rarr; converter &rarr; absorption tower. It is a non-functional visual aid &mdash; the actual monitoring and fault diagnosis happens in the SentinelGUI software running on the laptop beside it. The model helps visitors understand the process layout while the software demonstrates the monitoring and control logic.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: How portable is SentinelGUI?</div>
+  <div class="a">Pure Python 3.14+. Runs on Windows, Linux, and macOS. The only dependencies are pip-installable. No Docker, no VM, no web server required. A student can clone the repo and be running in under 2 minutes.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q: What came next? Future features?</div>
+  <div class="a">
+    <ul>
+      <li>Data logging to CSV for post-exercise analysis</li>
+      <li>Custom scenario builder UI (instead of hand-editing JSON)</li>
+      <li>OPC-UA bridge for connecting to real industrial PLCs</li>
+      <li>Historical trend playback (rewind and replay past sessions)</li>
+    </ul>
+  </div>
+</div>
+
+<hr>
+
+<div class="tldr"><strong>Remember:</strong> Judges care about &ldquo;why&rdquo; more than &ldquo;what.&rdquo; For every feature, you should be able to say &ldquo;we did it this way because&hellip;&rdquo; If you get stuck, say &ldquo;that's a great question &mdash; let me show you in the code.&rdquo; Opening the actual file and pointing to the line is more impressive than memorising an answer.</div>
+
+<p style="margin-top:2em;font-size:9pt;color:#666;">SentinelGUI &middot; <code>sentinelgui/</code> &middot; Chemical Technology Exhibition July 2026</p>
+
+</body>
+</html>

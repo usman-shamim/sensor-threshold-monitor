@@ -24,11 +24,11 @@ Thumbs.db
 # Claude Code per-machine settings
 .claude/settings.local.json
 
-# Teaching workspace (local only — never commit to GitHub)
-lessons/
-assets/
-learning-records/
-reference/
-MISSION.md
-NOTES.md
-RESOURCES.md
+# Teaching workspace — committed for exhibition reference
+# lessons/
+# assets/
+# learning-records/
+# reference/
+# MISSION.md
+# NOTES.md
+# RESOURCES.md

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dependencies · SentinelGUI</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; max-width: 780px; margin: 0 auto; padding: 2em; }
+  h1 { font-size: 20pt; margin-bottom: .2em; color: #003056; }
+  h2 { font-size: 14pt; margin: 1.8em 0 .4em; color: #003056; border-bottom: 2px solid #dee2e6; padding-bottom: .2em; }
+  h3 { font-size: 12pt; margin: 1.2em 0 .2em; }
+  p { margin: .3em 0 .6em; }
+  table { width: 100%; border-collapse: collapse; margin: .8em 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #dee2e6; font-size: 10pt; }
+  th { background: #003056; color: #fff; }
+  code { background: #e9ecef; padding: 1px 5px; border-radius: 3px; font-size: 10pt; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 9pt; font-weight: 600; margin-right: 4px; }
+  .tag-hard { background: #dc3545; color: #fff; }
+  .tag-gui { background: #0d6efd; color: #fff; }
+  .tag-report { background: #198754; color: #fff; }
+  .tag-chart { background: #6f42c1; color: #fff; }
+  .badge { display: inline-block; background: #ffc107; color: #000; padding: 0 6px; border-radius: 3px; font-size: 9pt; font-weight: 700; }
+  hr { border: none; border-top: 1px solid #dee2e6; margin: 1.5em 0; }
+  @media print { body { font-size: 10pt; padding: 0; } h2 { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>SentinelGUI — Dependency Reference</h1>
+<p style="color:#555;margin-bottom:1.5em;">Exhibition handout · July 2026</p>
+
+<table>
+  <tr><th>Library</th><th>Version</th><th>Role</th><th>Files</th></tr>
+  <tr><td><strong>customtkinter</strong></td><td>5.2.2</td><td><span class="tag tag-gui">GUI</span></td><td>8 dashboard files</td></tr>
+  <tr><td><strong>pyserial</strong></td><td>3.5</td><td><span class="tag tag-hard">Hardware</span></td><td><code>acquisition.py</code></td></tr>
+  <tr><td><strong>matplotlib</strong></td><td>3.9.0</td><td><span class="tag tag-chart">Chart</span></td><td><code>trend_chart.py</code></td></tr>
+  <tr><td><strong>fpdf2</strong></td><td>&ge;2.8</td><td><span class="tag tag-report">Report</span></td><td><code>report.py</code>, <code>exhibition_doc.py</code></td></tr>
+</table>
+
+<h2>1. customtkinter — Desktop GUI Framework</h2>
+<p><span class="badge">Why it was chosen</span> Modern-looking, cross-platform GUI library built on tkinter. CustomTkinter provides themeable widgets (rounded corners, dark/light mode, colour accents) that look professional out of the box &mdash; no CSS, no web stack.</p>
+
+<h3>How it is used in SentinelGUI</h3>
+<p>The entire dashboard is built from <code>ctk.CTkFrame</code>, <code>ctk.CTkLabel</code>, <code>ctk.CTkButton</code>, <code>ctk.CTkOptionMenu</code> widgets. Every file in <code>sentinelgui/dashboard/</code> (8 files) imports <code>customtkinter as ctk</code>:</p>
+<ul>
+  <li><strong><code>main_window.py</code></strong> &mdash; Root window, composes all panels, handles scenario switching, kiosk mode</li>
+  <li><strong><code>sensor_card.py</code></strong> &mdash; Individual value cards showing temperature / flow / pressure with zone colouring</li>
+  <li><strong><code>alarm_panel.py</code></strong> &mdash; Scrollable alarm history table with severity colour coding</li>
+  <li><strong><code>mimic_diagram.py</code></strong> &mdash; Process mimic diagram (nodes connected by arrows, coloured by zone)</li>
+  <li><strong><code>trend_chart.py</code></strong> &mdash; Embedding Matplotlib charts inside a <code>ctk.CTkFrame</code></li>
+  <li><strong><code>trace_panel.py</code></strong> &mdash; Agent reasoning trace (Observe &rarr; Reason &rarr; Act log)</li>
+  <li><strong><code>fault_log.py</code></strong> &mdash; Fault history log with diagnosis details</li>
+  <li><strong><code>ai_panel.py</code></strong> &mdash; Optional AI enrichment panel</li>
+</ul>
+
+<p><strong>Key advantage:</strong> Pure Python, no web server, no JavaScript. Runs on any desktop with Python 3.14+ and one <code>pip install</code>.</p>
+
+<hr>
+
+<h2>2. pyserial — Serial Communication</h2>
+<p><span class="badge">Why it was chosen</span> The only battle-tested Python serial library. Provides a clean, synchronous API over any serial port at any baud rate. Handles timeouts, parity, flow control &mdash; everything a real SCADA system needs.</p>
+
+<h3>How it is used</h3>
+<p>In <code>acquisition.py</code>, <code>pyserial</code> is imported <strong>lazily</strong> (only when hardware mode is requested). The <code>SerialDataAcquisition</code> class:</p>
+<ol>
+  <li>Opens <code>serial.Serial(port, baud, timeout=2.0)</code></li>
+  <li>Spawns a background thread that calls <code>readline()</code> in a loop</li>
+  <li>Parses CSV frames (<code>temperature,flow_rate,pressure</code>) from the Arduino</li>
+  <li>Pushes each parsed frame onto a <code>queue.Queue</code></li>
+</ol>
+
+<p><strong>Why lazy import?</strong> If the user runs <code>--simulate</code>, pyserial is never loaded at all. Zero overhead in demo mode; the library is purely optional.</p>
+
+<p><strong>Key advantage over alternatives (e.g., pySerial-asyncio):</strong> Blocking read on a background thread is simpler to reason about than async callbacks. A threaded queue is a well-understood pattern that any Python programmer can trace.</p>
+
+<hr>
+
+<h2>3. matplotlib — Real-time Trend Charts</h2>
+<p><span class="badge">Why it was chosen</span> The most widely used plotting library in Python. Embedding Matplotlib figures inside tkinter/CustomTkinter via <code>FigureCanvasTkAgg</code> is a documented, stable pattern.</p>
+
+<h3>How it is used</h3>
+<p><code>trend_chart.py</code> creates one <code>matplotlib.figure.Figure</code> per sensor. Each figure:</p>
+<ul>
+  <li>Renders a rolling line chart of the last ~60 readings</li>
+  <li>Colours the line by zone (normal = green, warning = amber, critical = red)</li>
+  <li>Updates on every new reading via <code>canvas.draw_idle()</code></li>
+</ul>
+
+<p>The canvas widget is embedded inside a <code>ctk.CTkFrame</code> alongside the sensor cards, so everything looks cohesive.</p>
+
+<p><strong>Key advantage over alternatives (plotly, bokeh):</strong> No browser, no web server, no JavaScript runtime. Matplotlib <code>FigureCanvasTkAgg</code> is a native tkinter widget &mdash; it lives inside the same window, redraws synchronously, and costs zero network overhead.</p>
+
+<hr>
+
+<h2>4. fpdf2 — PDF Report Generation</h2>
+<p><span class="badge">Why it was chosen</span> Pure-Python PDF generation with no system dependencies (no LaTeX, no wkhtmltopdf). fpdf2 handles Unicode via built-in fonts and produces small, fast-to-generate PDFs.</p>
+
+<h3>How it is used</h3>
+<p>Two files use fpdf2:</p>
+<ul>
+  <li><strong><code>report.py</code></strong> &mdash; Generates a one-page PDF summary on emergency stop or application shutdown. Contains: final readings, fault history, scenario name, timestamp.</li>
+  <li><strong><code>exhibition_doc.py</code></strong> &mdash; Generates a 7+ page exhibition document covering: system architecture, sensor spec, fault catalog with chemistry explanations, command reference.</li>
+</ul>
+
+<p><strong>Key advantage over alternatives (ReportLab, WeasyPrint):</strong> fpdf2 is the simplest API &mdash; you call <code>FPDF()</code>, <code>add_page()</code>, <code>set_font()</code>, <code>cell()</code>. That's it. No stylesheets, no HTML parsing, no templating engine. For a 7-page document with tables and formatted text, it runs in under 2 seconds.</p>
+
+<hr>
+
+<h2>Dependency Graph</h2>
+<pre style="background:#f4f4f4;padding:.8em;border-radius:6px;font-size:10pt;">
+SentinelGUI
+├── standard library (21 modules &mdash; zero install)
+│   ├── threading, queue         &rarr; background data acquisition
+│   ├── tkinter                  &rarr; base windowing (CustomTkinter builds on it)
+│   ├── csv, json, os, sys       &rarr; config &amp; data
+│   └── urllib                   &rarr; optional Gemini AI diagnosis
+├── customtkinter                &rarr; themed desktop GUI
+├── pyserial                     &rarr; serial port I/O (optional &mdash; hardware only)
+├── matplotlib                   &rarr; embedded trend charts
+└── fpdf2                        &rarr; report PDF export
+</pre>
+
+<hr>
+
+<h2>Quick Comparison: SentinelGUI vs. Industrial SCADA</h2>
+<table>
+  <tr><th>Feature</th><th>SentinelGUI</th><th>Commercial SCADA (e.g., Siemens WinCC, Ignition)</th></tr>
+  <tr><td><strong>Cost</strong></td><td>Free &mdash; MIT license, Python stdlib</td><td>$1,000&ndash;$20,000 per seat</td></tr>
+  <tr><td><strong>Setup time</strong></td><td><code>pip install</code> &rarr; <code>python -m sentinelgui</code></td><td>Days of configuration, licensing, PLC integration</td></tr>
+  <tr><td><strong>Fault diagnosis</strong></td><td>Built-in rule-based engine + optional AI</td><td>Usually sold as add-on module or requires custom scripting</td></tr>
+  <tr><td><strong>Transparency</strong></td><td>Every line of code is readable &mdash; any Python programmer can follow it</td><td>Proprietary black box; no source access</td></tr>
+  <tr><td><strong>Portability</strong></td><td>Any OS with Python 3.14+</td><td>Windows-only (WinCC) or requires Java (Ignition)</td></tr>
+  <tr><td><strong>Hardware requirement</strong></td><td>Any USB serial Arduino (or no hardware at all with --simulate)</td><td>Requires industrial PLC (Siemens, Allen-Bradley, etc.)</td></tr>
+  <tr><td><strong>Multi-scenario</strong></td><td>Switchable via JSON config &mdash; reactor, boiler, distillation, contact process</td><td>Scenario change requires re-engineering the HMI screens</td></tr>
+</table>
+
+<p style="margin-top:2em;font-size:9pt;color:#666;">SentinelGUI &middot; <code>sentinelgui/</code> &middot; Built with SpecKit Plus &middot; Chemical Technology Exhibition July 2026</p>
+
+</body>
+</html>

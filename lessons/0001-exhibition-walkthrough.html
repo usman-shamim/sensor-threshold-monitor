@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lesson 1 · Exhibition Walkthrough · SentinelGUI</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; max-width: 780px; margin: 0 auto; padding: 2em; }
+  h1 { font-size: 20pt; margin-bottom: .2em; color: #003056; }
+  h2 { font-size: 14pt; margin: 1.5em 0 .4em; color: #003056; border-bottom: 2px solid #dee2e6; }
+  h3 { font-size: 12pt; margin: 1.2em 0 .2em; color: #003056; }
+  .step { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 10px 14px; margin: .8em 0; border-radius: 0 6px 6px 0; }
+  .demo { background: #f0fdf4; border-left: 4px solid #198754; padding: 10px 14px; margin: .8em 0; border-radius: 0 6px 6px 0; }
+  .tip { background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; margin: .8em 0; border-radius: 6px; font-size: 10pt; }
+  code { background: #e9ecef; padding: 1px 5px; border-radius: 3px; font-size: 10pt; }
+  table { width: 100%; border-collapse: collapse; margin: .8em 0; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #dee2e6; font-size: 10pt; }
+  th { background: #003056; color: #fff; }
+  .file { font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 10pt; }
+  hr { border: none; border-top: 1px solid #dee2e6; margin: 1.2em 0; }
+  .ref { font-size: 10pt; color: #555; }
+  @media print { body { font-size: 10pt; padding: 0; } h2 { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>Lesson 1: Exhibition Walkthrough</h1>
+<p style="color:#555;">Explain SentinelGUI to judges in 5 minutes &middot; <a href="../reference/dependencies.html">Dependencies ref</a> &middot; <a href="../reference/exhibition-qa.html">Q&amp;A ref</a></p>
+
+<div class="tip"><strong>Goal:</strong> Walk a judge through the system so they understand what it does, how it works, and why it matters &mdash; all in 5 minutes. Use this script as a spine; adapt based on what the judge asks about.</div>
+
+<!-- ============================================================ -->
+<h2>Phase 1: The Pitch (30 seconds)</h2>
+
+<div class="step">
+  <strong>Say this:</strong><br>
+  &ldquo;This is SentinelGUI &mdash; an open-source SCADA dashboard for monitoring industrial chemical processes. It reads temperature, pressure, and flow sensors, detects faults in real time, and explains the likely cause in plain language. It runs on any laptop with Python, costs nothing, and you can read every line of code.&rdquo;
+</div>
+
+<p class="ref">See <a href="../reference/dependencies.html">Dependencies Reference</a> for the comparison table vs. commercial SCADA. See <a href="../reference/exhibition-qa.html">Exhibition Q&amp;A</a> for the &ldquo;Why not use Siemens WinCC?&rdquo; answer.</p>
+
+<!-- ============================================================ -->
+<h2>Phase 2: Live Demo (2 minutes)</h2>
+
+<h3>Step 1 &mdash; Start the app</h3>
+<div class="demo">
+  <p>Open a terminal and run:</p>
+  <pre><code>python -m sentinelgui --simulate --kiosk --scenario contact</code></pre>
+  <p><strong>Explain:</strong> <code>--simulate</code> means no Arduino needed, <code>--kiosk</code> is exhibition mode (fullscreen, large text), <code>--scenario contact</code> selects the sulfuric acid contact process.</p>
+</div>
+
+<h3>Step 2 &mdash; The dashboard</h3>
+<div class="demo">
+  <p>Point to each area:</p>
+  <ol>
+    <li><strong>Sensor cards</strong> (top) &mdash; show live values coloured by zone: green = normal, amber = warning, red = critical</li>
+    <li><strong>Trend charts</strong> &mdash; rolling graph of the last 60 readings per sensor</li>
+    <li><strong>Mimic diagram</strong> &mdash; process flow diagram showing Sulfur Burner &rarr; Blower &rarr; &Delta;P Sensor &rarr; Converter, coloured by health</li>
+    <li><strong>Alarm panel</strong> &mdash; history of alarms with severity and timestamp</li>
+    <li><strong>Trace panel</strong> &mdash; the agent's reasoning in Observe &rarr; Reason &rarr; Act format</li>
+  </ol>
+</div>
+
+<h3>Step 3 &mdash; Inject a fault</h3>
+<div class="demo">
+  <p>Click the <strong>Inject Fault</strong> button and choose &ldquo;Blockage&rdquo;.</p>
+  <p><strong>What happens:</strong></p>
+  <ul>
+    <li>Flow rate drops (blockage restricts flow), pressure rises (fluid backs up)</li>
+    <li>Sensor cards turn red</li>
+    <li>Mimic diagram stages change colour</li>
+    <li>Alarm panel shows a new critical alarm</li>
+    <li>Trace panel prints: <em>&ldquo;Observe: flow 2.1 &rarr; critical, press 4.5 &rarr; critical. Reason: blockage (high confidence). Act: raised critical alarm 'Flow Sensor'&rdquo;</em></li>
+  </ul>
+  <p><strong>Key point to make:</strong> &ldquo;The diagnosis came from a rule engine in 200 lines of Python &mdash; no AI, no cloud, no training data. We can trace exactly why it decided &lsquo;blockage&rsquo; and not &lsquo;pump failure&rsquo;.&rdquo;</p>
+</div>
+
+<h3>Step 4 &mdash; Clear and switch scenarios</h3>
+<div class="demo">
+  <p>Click <strong>Clear Fault</strong> &rarr; values return to normal. Then switch scenario from the dropdown to &ldquo;Steam Boiler&rdquo;.</p>
+  <p><strong>Explain:</strong> &ldquo;The entire dashboard reconfigures &mdash; new sensor labels, new thresholds, new mimic stages. All from one JSON file. In commercial SCADA, this would take hours of HMI re-engineering.&rdquo;</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Phase 3: Architecture Deep-Dive (1 minute)</h2>
+
+<p>If a judge asks how it works internally, show this map:</p>
+
+<pre style="background:#f4f4f4;padding:.8em;border-radius:6px;font-size:9pt;">
+   Arduino                            Python
+   ───────                            ──────
+   USB serial                      acquisition.py (pyserial)
+       │                                  │
+       │                          queue.Queue (thread-safe)
+       │                                  │
+       │  ┌───────────────────────────────┘
+       │  ▼
+       │  process_engine.py  →  Reading object
+       │      │
+       │      ├── reading_window.py  (last 300 readings)
+       │      ├── alarm_manager.py   (zone classification + debounce)
+       │      ├── fault_engine.py    (rule-based classifier, 6 faults)
+       │      └── react_agent.py     (Observe → Reason → Act)
+       │              │
+       │              ▼
+       │      dashboard/ (customtkinter + matplotlib)
+       │      sensor_cards, trend_charts, mimic_diagram,
+       │      alarm_panel, trace_panel, fault_log
+</pre>
+
+<p class="ref">Each file is listed in <a href="../reference/dependencies.html">Dependencies Reference</a>.</p>
+
+<!-- ============================================================ -->
+<h2>Phase 4: Key Technical Wins to Mention (30 seconds)</h2>
+
+<table>
+  <tr><th>Win</th><th>How it works</th><th>Why it matters</th></tr>
+  <tr><td><strong>UI never freezes</strong></td><td>Producer-consumer via <code>queue.Queue</code>; background thread reads hardware, main thread updates UI</td><td>Professional feel even on a low-end laptop</td></tr>
+  <tr><td><strong>No AI dependency</strong></td><td>Deterministic rule engine in <code>fault_engine.py</code> &mdash; 6 signatures checked in priority order</td><td>Works offline, always reproducible, zero cost per diagnosis</td></tr>
+  <tr><td><strong>Multi-scenario</strong></td><td><code>--scenario</code> flag reads JSON config; <code>set_tuning()</code> adjusts all thresholds</td><td>One dashboard monitors reactor, boiler, distillation, or contact process</td></tr>
+  <tr><td><strong>Auto-recovery</strong></td><td>Serial disconnect detected after 2s &rarr; transparently switches to simulator</td><td>Demo never crashes &mdash; important for exhibitions</td></tr>
+  <tr><td><strong>No database</strong></td><td>All state in memory (deque of 300 readings)</td><td>Zero setup, zero maintenance, portable</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>Phase 5: What's Next (30 seconds)</h2>
+
+<div class="step">
+  <p>If a judge asks about future work, mention:</p>
+  <ul>
+    <li><strong>CSV logging</strong> &mdash; record sessions for post-analysis</li>
+    <li><strong>Custom scenario builder</strong> &mdash; visual editor for JSON configs</li>
+    <li><strong>OPC-UA bridge</strong> &mdash; connect to real industrial PLCs</li>
+    <li><strong>More fault types</strong> &mdash; sensor drift, valve sticking, instrument air failure</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>Resources</h2>
+<ul>
+  <li><a href="../reference/dependencies.html">Dependencies Reference</a> &mdash; what each library does and why it was chosen</li>
+  <li><a href="../reference/exhibition-qa.html">Exhibition Q&amp;A</a> &mdash; ~15 anticipated questions with answers</li>
+  <li><code>sentinelgui/</code> &mdash; the source code</li>
+</ul>
+
+<div class="tip"><strong>Remember:</strong> If you don't know an answer, say &ldquo;That's a great question &mdash; let's open the code and look together.&rdquo; Then navigate to the relevant file and read it aloud. Judges respect honesty and curiosity more than memorised answers. Ask me (the agent) any follow-up questions and I'll help you prepare.</div>
+
+<p style="margin-top:2em;font-size:9pt;color:#666;">Lesson 1 of 1 &middot; SentinelGUI Exhibition Walkthrough &middot; July 2026 &middot; <a href="../reference/exhibition-qa.html">Ask me follow-up questions</a></p>
+
+</body>
+</html>
